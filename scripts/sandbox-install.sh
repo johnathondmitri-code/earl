@@ -112,7 +112,18 @@ cd "$EARL_REPO_DIR"
 python -c "import earl_workspace; cfg = earl_workspace.get_workspace(); print(f'OK — workspace={cfg.workspace_id} company={cfg.company_name}')"
 
 # ----------------------------------------------------------------------------
-# 6. Start the gateway (Telegram). Background, log to file.
+# 6. Bridge EARL_* env vars → the names the Hermes-derived gateway expects
+# ----------------------------------------------------------------------------
+# Earl SaaS sets EARL_* env vars; the gateway code reads vendor-native names.
+export TELEGRAM_BOT_TOKEN="$EARL_TELEGRAM_BOT_TOKEN"
+export ANTHROPIC_API_KEY="$EARL_ANTHROPIC_API_KEY"
+# Allow any user to talk to the bot — the owner identity check is enforced at
+# the workspace level via the Earl SaaS (only the owner has the bot's chat id).
+# For a multi-user workspace, set TELEGRAM_ALLOWED_USERS in the per-workspace config.
+export GATEWAY_ALLOW_ALL_USERS="${GATEWAY_ALLOW_ALL_USERS:-true}"
+
+# ----------------------------------------------------------------------------
+# 7. Start the gateway (Telegram). Background, log to file.
 # ----------------------------------------------------------------------------
 echo "==> Starting Telegram gateway"
 cd "$EARL_REPO_DIR"
