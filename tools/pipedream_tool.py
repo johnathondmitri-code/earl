@@ -264,6 +264,9 @@ def _is_configured() -> bool:
 # ----- Tool registry binding -----
 # NOTE: the registry's `register()` signature requires `name=` and uses
 # `check_fn=` (not `availability=`). All three calls below must match that.
+import sys as _sys
+print(f"[PIPEDREAM_TRACER] module loaded — registry={'yes' if registry is not None else 'NONE'}, _is_configured()={_is_configured()}", file=_sys.stderr, flush=True)
+logger.info("[pipedream_tool] module loaded — registry=%s, _is_configured()=%s", "yes" if registry is not None else "NONE", _is_configured())
 if registry is not None:
     try:
         registry.register(
@@ -290,5 +293,8 @@ if registry is not None:
             check_fn=_is_configured,
             is_async=True,
         )
+        logger.info("[pipedream_tool] registered 3 tools under toolset 'earl-pipedream'")
     except Exception as e:  # pragma: no cover
-        logger.warning("Could not register Pipedream tools with registry: %s", e)
+        logger.warning("[pipedream_tool] Could not register Pipedream tools with registry: %s", e)
+else:
+    logger.warning("[pipedream_tool] registry is None at import time — registration skipped")
