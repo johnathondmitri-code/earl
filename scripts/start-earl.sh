@@ -100,20 +100,70 @@ export TELEGRAM_BOT_TOKEN="$EARL_TELEGRAM_BOT_TOKEN"
 export ANTHROPIC_API_KEY="$EARL_ANTHROPIC_API_KEY"
 export GATEWAY_ALLOW_ALL_USERS="${GATEWAY_ALLOW_ALL_USERS:-true}"
 
-# 6. Start gateway in background
+# 6. Kill any existing gateway BEFORE starting a new one.
+#    Without this, re-provisioning a live sandbox stacks gateways: the old
+#    one keeps running with stale code (and a stale system prompt), the
+#    new one fights for the Telegram polling slot, and pgrep|head -1 below
+#    would report the OLDEST pid as "running" — masking the fact that the
+#    new gateway was actually started but the stale one is what's serving.
+#    This is the carbon-copy guarantee: every start-earl.sh run produces
+#    a single, fresh gateway running the current code on disk.
+EXISTING_PIDS=$(pgrep -f "python -m gateway.run" 2>/dev/null || true)
+if [ -n "$EXISTING_PIDS" ]; then
+  echo "==> Stopping stale gateway PIDs: $EXISTING_PIDS"
+  # Try graceful first, then escalate
+  echo "$EXISTING_PIDS" | xargs -r kill 2>/dev/null || true
+  for _ in 1 2 3 4 5; do
+    REMAINING=$(pgrep -f "python -m gateway.run" 2>/dev/null || true)
+    if [ -z "$REMAINING" ]; then break; fi
+    sleep 1
+  done
+  REMAINING=$(pgrep -f "python -m gateway.run" 2>/dev/null || true)
+  if [ -n "$REMAINING" ]; then
+    echo "==> Gateway didn't exit gracefully, sending SIGKILL: $REMAINING"
+    echo "$REMAINING" | xargs -r kill -9 2>/dev/null || true
+    sleep 1
+  fi
+fi
+
+# 6b. Wipe conversation/session state. Hermes persists conversation history
+#     across gateway restarts via sessions/*.jsonl + memories/. If a user
+#     pattern (e.g. an "asdf" signature) ends up in that history, the model
+#     keeps mirroring it even after the system prompt is updated. A clean
+#     restart should mean a clean conversation.
+#
+#     Opt-in keep via KEEP_CONVERSATION_STATE=1 if the SaaS ever wants to
+#     preserve history across an upgrade-restart.
+if [ "${KEEP_CONVERSATION_STATE:-}" != "1" ]; then
+  if [ -d "$EARL_HOME/sessions" ] || [ -d "$EARL_HOME/memories" ]; then
+    echo "==> Clearing conversation/session state (KEEP_CONVERSATION_STATE=1 to preserve)"
+    rm -rf "$EARL_HOME/sessions"/* "$EARL_HOME/memories"/* 2>/dev/null || true
+  fi
+fi
+
+# 7. Start the new gateway. Capture its PID directly so we don't depend on
+#    pgrep returning the right one when multiple python processes exist.
 echo "==> Starting Telegram gateway"
 nohup /home/user/earl/venv/bin/python -m gateway.run > "$LOGS/gateway.log" 2>&1 &
+LAUNCH_PID=$!
 sleep 3
 
-# 7. Verify it's alive
-if pgrep -f "python -m gateway.run" >/dev/null 2>&1; then
-  ACTUAL_PID=$(pgrep -f "python -m gateway.run" | head -1)
-  echo "$ACTUAL_PID" > "$EARL_HOME/gateway.pid"
-  echo "==> Earl gateway running (pid $ACTUAL_PID)"
+# 8. Verify the gateway we just launched is still alive. The captured
+#    LAUNCH_PID is the actual child we started — not whatever pgrep
+#    happens to find. We still cross-check pgrep to make sure no
+#    duplicates leaked in.
+if kill -0 "$LAUNCH_PID" 2>/dev/null; then
+  PGREP_COUNT=$(pgrep -fc "python -m gateway.run" 2>/dev/null || echo 0)
+  echo "$LAUNCH_PID" > "$EARL_HOME/gateway.pid"
+  echo "==> Earl gateway running (pid $LAUNCH_PID, total matching procs: $PGREP_COUNT)"
+  if [ "$PGREP_COUNT" -gt 1 ]; then
+    echo "WARNING: $PGREP_COUNT gateway-like processes are running. Expected exactly 1." >&2
+    pgrep -af "python -m gateway.run" >&2 || true
+  fi
   echo "==> Earl ready at $(date -Iseconds)"
   exit 0
 else
-  echo "ERROR: gateway did not start. Tail of gateway.log:" >&2
+  echo "ERROR: gateway pid $LAUNCH_PID did not stay alive. Tail of gateway.log:" >&2
   tail -50 "$LOGS/gateway.log" >&2
   exit 3
 fi
