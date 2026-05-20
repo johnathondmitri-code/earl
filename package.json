@@ -1,22 +1,31 @@
 {
   "name": "earl",
-  "version": "1.0.0",
-  "description": "An AI agent with advanced tool-calling capabilities, featuring a flexible toolsets system for organizing and managing tools.",
+  "version": "0.1.0",
+  "description": "Earl Agent — AI employee runtime (forked from Hermes Agent by Nous Research, MIT). Python core; this package.json carries optional Node helpers for browser tooling and E2B smoke testing.",
   "private": true,
   "scripts": {
-    "postinstall": "echo '✅ Browser tools ready. Run: python run_agent.py --help'"
+    "postinstall": "echo '✅ Node helpers installed. Python: pip install -e .  Smoke test: pnpm smoke'",
+    "smoke": "tsx scripts/smoke-test-e2b.ts",
+    "smoke:keepalive": "KEEP_ALIVE=1 tsx scripts/smoke-test-e2b.ts",
+    "kill": "tsx scripts/kill-sandbox.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NousResearch/Hermes-Agent.git"
+    "url": "git+https://github.com/johnathondmitri-code/earl.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/NousResearch/Hermes-Agent/issues"
+    "url": "https://github.com/johnathondmitri-code/earl/issues"
   },
-  "homepage": "https://github.com/NousResearch/Hermes-Agent#readme",
+  "homepage": "https://github.com/johnathondmitri-code/earl#readme",
   "dependencies": {
-    "agent-browser": "^0.26.0"
+    "agent-browser": "^0.26.0",
+    "e2b": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
   },
   "overrides": {
     "lodash": "4.18.1"

@@ -1,18 +1,20 @@
 #!/bin/bash
 # ============================================================================
-# Earl Sandbox Install (E2B-flavored, headless)
+# Earl Sandbox Install (E2B-flavored, headless, non-root)
 # ============================================================================
 # Runs inside a per-workspace E2B sandbox at provision time. NOT user-facing.
 # The Earl SaaS provisioner sets env vars (EARL_WORKSPACE_ID, EARL_COMPANY_NAME,
 # EARL_ANTHROPIC_API_KEY, EARL_TELEGRAM_BOT_TOKEN, EARL_PIPEDREAM_*, etc.) before
 # invoking this script.
 #
+# E2B note: sandboxes run as `user` (non-root) — all paths must be under $HOME.
+#
 # What it does:
 #   1. Install uv (Python project manager)
-#   2. Create venv at /opt/earl/venv (or $EARL_HOME/venv)
+#   2. Create venv at $EARL_HOME/venv
 #   3. uv pip install -e .  (this repo, mounted into the sandbox)
-#   4. Validate required env vars + write a sentinel file
-#   5. Start the gateway via earl-gateway (Telegram only)
+#   4. Validate required env vars + write state files
+#   5. Start the gateway via `python -m gateway.run` (Telegram only)
 #
 # Logs go to $EARL_HOME/logs/install.log and $EARL_HOME/logs/gateway.log.
 # Exit non-zero on any failure so the SaaS provisioner sees the error.
@@ -20,15 +22,18 @@
 
 set -euo pipefail
 
-EARL_HOME="${EARL_HOME:-/opt/earl}"
-EARL_REPO_DIR="${EARL_REPO_DIR:-/opt/earl/repo}"
+EARL_HOME="${EARL_HOME:-$HOME/earl}"
+EARL_REPO_DIR="${EARL_REPO_DIR:-$HOME/earl/repo}"
+EARL_STATE_DIR="${EARL_STATE_DIR:-$HOME/earl/state}"
 LOGS="$EARL_HOME/logs"
-mkdir -p "$EARL_HOME" "$LOGS"
+mkdir -p "$EARL_HOME" "$LOGS" "$EARL_STATE_DIR"
 exec > >(tee -a "$LOGS/install.log") 2>&1
 
 echo "==> Earl sandbox install starting at $(date -Iseconds)"
 echo "EARL_HOME=$EARL_HOME"
 echo "EARL_REPO_DIR=$EARL_REPO_DIR"
+echo "EARL_STATE_DIR=$EARL_STATE_DIR"
+echo "USER=$(whoami)"
 
 # ----------------------------------------------------------------------------
 # 1. Required env validation (fail loud, fast)
@@ -50,45 +55,47 @@ if [ "${#missing[@]}" -ne 0 ]; then
   exit 2
 fi
 
+# Earl's workspace config defaults memory_path to /var/earl/memory.json. Since
+# we run as non-root, override that to under $EARL_STATE_DIR.
+export EARL_MEMORY_PATH="${EARL_MEMORY_PATH:-$EARL_STATE_DIR/memory.json}"
+
 # ----------------------------------------------------------------------------
 # 2. Install uv if not present
 # ----------------------------------------------------------------------------
 if ! command -v uv >/dev/null 2>&1; then
   echo "==> Installing uv"
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  # shellcheck source=/dev/null
-  source "$HOME/.local/bin/env" || true
   export PATH="$HOME/.local/bin:$PATH"
 fi
+echo "uv: $(command -v uv) — $(uv --version 2>&1)"
 
 # ----------------------------------------------------------------------------
 # 3. Create venv + install Earl
 # ----------------------------------------------------------------------------
 cd "$EARL_REPO_DIR"
 if [ ! -d "$EARL_HOME/venv" ]; then
-  echo "==> Creating venv at $EARL_HOME/venv"
+  echo "==> Creating venv at $EARL_HOME/venv (Python 3.11 via uv)"
   uv venv "$EARL_HOME/venv" --python 3.11
 fi
 # shellcheck source=/dev/null
 source "$EARL_HOME/venv/bin/activate"
 
-echo "==> Installing Earl + dependencies"
+echo "==> Installing Earl + dependencies (this takes 60-90s)"
 # Use the [all] extra so Telegram + Anthropic + tool deps are present
 uv pip install -e ".[all]"
 
 # ----------------------------------------------------------------------------
 # 4. Write workspace state files
 # ----------------------------------------------------------------------------
-mkdir -p /var/earl
-echo "$EARL_WORKSPACE_ID" > /var/earl/workspace_id
+echo "$EARL_WORKSPACE_ID" > "$EARL_STATE_DIR/workspace_id"
 date -Iseconds > "$EARL_HOME/installed_at"
 
 # Write memory file if SaaS passed one inline (via EARL_MEMORY_JSON env var,
 # convenient for E2B which doesn't easily mount files). Otherwise the SaaS
-# provisioner is expected to write /var/earl/memory.json directly.
+# provisioner is expected to write $EARL_MEMORY_PATH directly.
 if [ -n "${EARL_MEMORY_JSON:-}" ]; then
-  echo "==> Writing /var/earl/memory.json from EARL_MEMORY_JSON"
-  printf '%s' "$EARL_MEMORY_JSON" > /var/earl/memory.json
+  echo "==> Writing $EARL_MEMORY_PATH from EARL_MEMORY_JSON"
+  printf '%s' "$EARL_MEMORY_JSON" > "$EARL_MEMORY_PATH"
 fi
 
 # Write the persona overlay (overwrites docker/SOUL.md, the soul file Earl reads)
@@ -101,12 +108,14 @@ fi
 # 5. Smoke test the install
 # ----------------------------------------------------------------------------
 echo "==> Smoke test"
+cd "$EARL_REPO_DIR"
 python -c "import earl_workspace; cfg = earl_workspace.get_workspace(); print(f'OK — workspace={cfg.workspace_id} company={cfg.company_name}')"
 
 # ----------------------------------------------------------------------------
 # 6. Start the gateway (Telegram). Background, log to file.
 # ----------------------------------------------------------------------------
 echo "==> Starting Telegram gateway"
+cd "$EARL_REPO_DIR"
 nohup python -m gateway.run > "$LOGS/gateway.log" 2>&1 &
 echo $! > "$EARL_HOME/gateway.pid"
 
@@ -118,6 +127,6 @@ if kill -0 "$(cat "$EARL_HOME/gateway.pid")" 2>/dev/null; then
   exit 0
 else
   echo "ERROR: gateway crashed during startup. Tail of gateway.log:" >&2
-  tail -30 "$LOGS/gateway.log" >&2
+  tail -50 "$LOGS/gateway.log" >&2
   exit 3
 fi

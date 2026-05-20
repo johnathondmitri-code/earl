@@ -77,8 +77,10 @@ class EarlWorkspaceConfig:
     """Bearer token authenticating callback requests."""
 
     # --- Memory + behavior ---
-    memory_path: str = "/var/earl/memory.json"
-    """Path inside the sandbox where company memory is mounted as JSON."""
+    memory_path: str = ""
+    """Path inside the sandbox where company memory is mounted as JSON.
+    Set by EARL_MEMORY_PATH env (the install script defaults it to
+    $HOME/earl/state/memory.json since E2B sandboxes run as non-root)."""
 
     persona_overlay: str = ""
     """Optional persona dispatch ('You're the intake coordinator'). Empty = default Earl persona."""
@@ -143,7 +145,10 @@ class EarlWorkspaceConfig:
             or os.environ.get("EARL_WORKSPACE_ID", "").strip(),
             saas_callback_url=os.environ.get("EARL_SAAS_CALLBACK_URL", "").strip(),
             saas_callback_token=os.environ.get("EARL_SAAS_CALLBACK_TOKEN", "").strip(),
-            memory_path=os.environ.get("EARL_MEMORY_PATH", "/var/earl/memory.json").strip(),
+            memory_path=os.environ.get(
+                "EARL_MEMORY_PATH",
+                str(Path.home() / "earl" / "state" / "memory.json"),
+            ).strip(),
             persona_overlay=os.environ.get("EARL_PERSONA_OVERLAY", "").strip(),
             monthly_interactions_included=int(
                 os.environ.get("EARL_MONTHLY_INTERACTIONS_INCLUDED", "20000") or "20000"
