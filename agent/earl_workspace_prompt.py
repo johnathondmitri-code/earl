@@ -57,7 +57,7 @@ def build_workspace_prompt_section() -> str:
     lines.append("")
     lines.append(
         "This section describes the company you (Earl) work for on this "
-        "particular workspace. Read it carefully — the brand voice, escalation "
+        "particular workspace. Read it carefully. The brand voice, escalation "
         "rules, and pricing rules below override your defaults."
     )
     lines.append("")
@@ -130,7 +130,7 @@ def _section_brand_voice(memory: dict[str, Any]) -> list[str]:
     tone = voice.get("tone")
     if tone:
         tone_label = {
-            "warm_professional": "Warm + professional (the default — friendly, competent, no fluff)",
+            "warm_professional": "Warm + professional (the default: friendly, competent, no fluff)",
             "no_nonsense": "No-nonsense, direct (skip pleasantries, get to the point)",
             "friendly_casual": "Friendly + casual (conversational, can use light humor)",
             "formal": "Formal (full sentences, no contractions, respectful titles)",
@@ -186,11 +186,11 @@ def _section_operations(memory: dict[str, Any]) -> list[str]:
                 continue
             day = h.get("day")
             day_name = _DAY_NAMES[day] if isinstance(day, int) and 1 <= day <= 7 else f"day {day}"
-            open_t = h.get("open") or "—"
-            close_t = h.get("close") or "—"
+            open_t = h.get("open") or "?"
+            close_t = h.get("close") or "?"
             policy = h.get("after_hours_policy") or ""
             policy_suffix = f" ({policy.replace('_', ' ')} after hours)" if policy else ""
-            out.append(f"- {day_name}: {open_t}–{close_t}{policy_suffix}")
+            out.append(f"- {day_name}: {open_t} to {close_t}{policy_suffix}")
         out.append("")
     return out
 
@@ -230,7 +230,7 @@ def _section_escalation(memory: dict[str, Any]) -> list[str]:
     rules = memory.get("escalationRules") or []
     if not (isinstance(rules, list) and rules):
         return []
-    out = ["### Hard escalation rules (always escalate to owner — never engage)"]
+    out = ["### Hard escalation rules (always escalate to owner, never engage)"]
     for r in rules:
         out.append(f"- {r}")
     out.append("")
@@ -252,7 +252,7 @@ def _section_team(memory: dict[str, Any]) -> list[str]:
         if role:
             parts.append(f"({role})")
         if handle:
-            parts.append(f"— Telegram @{handle}")
+            parts.append(f"(Telegram @{handle})")
         out.append(f"- {' '.join(parts)}")
     out.append("")
     return out
