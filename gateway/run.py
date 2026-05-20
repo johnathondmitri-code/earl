@@ -16514,7 +16514,22 @@ class GatewayRunner:
             _history_media_paths: set = set()
             for _hm in agent_history:
                 if _hm.get("role") in {"tool", "function"}:
-                    _hc = _hm.get("content", "")
+                    # `.get("content", "")` is NOT enough: if the message has
+                    # `content: None` (which happens when a tool handler
+                    # raised, dispatch caught it, and the framework stored
+                    # the result as None somewhere upstream), .get returns
+                    # None — not the default. Use `or ""` to also handle
+                    # falsy values defensively.
+                    _hc = _hm.get("content") or ""
+                    if not isinstance(_hc, str):
+                        # Tool results can be dict/list when handlers return
+                        # native Python objects (e.g. tools/pipedream_tool's
+                        # async handlers returning `resp.json()`). Coerce to
+                        # string so the `in` check below never crashes.
+                        try:
+                            _hc = json.dumps(_hc, default=str)
+                        except Exception:
+                            _hc = str(_hc)
                     if "MEDIA:" in _hc:
                         _TOOL_MEDIA_RE = re.compile(
                             r'MEDIA:((?:/|~\/)\S+\.(?:png|jpe?g|gif|webp|'
