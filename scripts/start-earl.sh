@@ -27,6 +27,13 @@ exec > >(tee -a "$LOGS/start.log") 2>&1
 
 echo "==> Earl start at $(date -Iseconds)"
 
+# 0. Pull latest code (template might be slightly behind main)
+#    Skip if SKIP_GIT_PULL=1 (e.g., when offline or pinning versions)
+if [ "${SKIP_GIT_PULL:-}" != "1" ] && [ -d "$EARL_REPO_DIR/.git" ]; then
+  echo "==> Pulling latest from origin"
+  ( cd "$EARL_REPO_DIR" && git pull --rebase --autostash --quiet 2>&1 ) || echo "  (git pull failed, continuing with template code)"
+fi
+
 # 1. Required env validation
 required=(
   EARL_WORKSPACE_ID
