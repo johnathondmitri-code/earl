@@ -100,6 +100,15 @@ export TELEGRAM_BOT_TOKEN="$EARL_TELEGRAM_BOT_TOKEN"
 export ANTHROPIC_API_KEY="$EARL_ANTHROPIC_API_KEY"
 export GATEWAY_ALLOW_ALL_USERS="${GATEWAY_ALLOW_ALL_USERS:-true}"
 
+# 5b. Earl's consumer-facing display defaults. Hermes ships with developer-tool
+#     defaults that leak through to chat ("⚙️ pipedream_action..." bubbles,
+#     30 slash commands in the Telegram menu, /verbose hints, etc.). For Earl
+#     we want the chat to feel like a person, not a CLI. These env vars
+#     suppress those AI-tells. Workspaces can override by setting the var
+#     before invoking start-earl.sh.
+export EARL_TOOL_PROGRESS_MODE="${EARL_TOOL_PROGRESS_MODE:-off}"        # no "⚙️ tool..." bubbles
+export EARL_TELEGRAM_MENU="${EARL_TELEGRAM_MENU:-hidden}"               # empty Telegram slash menu
+
 # 6. Kill any existing gateway BEFORE starting a new one.
 #    Without this, re-provisioning a live sandbox stacks gateways: the old
 #    one keeps running with stale code (and a stale system prompt), the

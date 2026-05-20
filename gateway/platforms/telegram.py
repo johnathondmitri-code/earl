@@ -1558,10 +1558,26 @@ class TelegramAdapter(BasePlatformAdapter):
                     BotCommandScopeChat,
                 )
                 from earl_cli.commands import telegram_menu_commands
-                # Telegram allows up to 100 commands but has an undocumented
-                # payload size limit (~4KB total).  Limit to 30 core commands
-                # to stay well under the threshold while covering all categories.
-                menu_commands, hidden_count = telegram_menu_commands(max_commands=MAX_COMMANDS_PER_SCOPE)
+                # Earl runs as an employee, not a developer console. When
+                # EARL_TELEGRAM_MENU=hidden we register an EMPTY command list,
+                # which makes Telegram suppress the slash-command hint menu
+                # entirely. The underlying handlers still work if someone
+                # types a command name; they just aren't surfaced. The agent
+                # invokes these as internal capabilities based on natural
+                # language, which is the user-facing surface we want.
+                import os as _earl_os
+                _earl_menu_mode = (_earl_os.environ.get("EARL_TELEGRAM_MENU") or "").strip().lower()
+                if _earl_menu_mode in {"hidden", "off", "none", "empty"}:
+                    menu_commands, hidden_count = [], 0
+                    logger.info(
+                        "[%s] Telegram menu hidden (EARL_TELEGRAM_MENU=%s) — slash commands stay reachable via direct invocation",
+                        self.name, _earl_menu_mode,
+                    )
+                else:
+                    # Telegram allows up to 100 commands but has an undocumented
+                    # payload size limit (~4KB total).  Limit to 30 core commands
+                    # to stay well under the threshold while covering all categories.
+                    menu_commands, hidden_count = telegram_menu_commands(max_commands=MAX_COMMANDS_PER_SCOPE)
                 bot_commands = [BotCommand(name, desc) for name, desc in menu_commands]
                 # Register for all scopes independently — Telegram picks the
                 # narrowest matching scope per chat type (forum topics fall
