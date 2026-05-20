@@ -195,10 +195,18 @@ TOOL_SCHEMA_LIST_ACTIONS = {
 
 
 # ----- Tool handlers -----
+# IMPORTANT: every handler takes (args: dict, **kwargs). The registry's
+# dispatch() calls `entry.handler(args, **kwargs)` where:
+#   - `args` is the LLM-provided input dict (matches the schema's properties)
+#   - `**kwargs` carries dispatch-context like `task_id`, `user_task` that the
+#     registry adds for every call.
+# Handlers MUST absorb the kwargs (or raise TypeError: unexpected kwarg task_id).
 async def pipedream_action(
-    *, action_id: str, configured_props: dict[str, Any]
+    args: dict[str, Any], **_kwargs: Any
 ) -> dict[str, Any]:
     """Execute a Pipedream Connect action on behalf of the current workspace."""
+    action_id = args.get("action_id", "")
+    configured_props = args.get("configured_props") or {}
     logger.info(
         "[pipedream] running action=%s for workspace=%s",
         action_id,
@@ -227,7 +235,9 @@ async def pipedream_action(
         return resp.json()
 
 
-async def pipedream_list_accounts() -> list[dict[str, Any]]:
+async def pipedream_list_accounts(
+    args: dict[str, Any] | None = None, **_kwargs: Any
+) -> list[dict[str, Any]]:
     """List connected accounts scoped to the current workspace."""
     headers = await _headers()
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -240,8 +250,11 @@ async def pipedream_list_accounts() -> list[dict[str, Any]]:
         return resp.json().get("data", [])
 
 
-async def pipedream_list_actions(*, app: str) -> list[dict[str, Any]]:
+async def pipedream_list_actions(
+    args: dict[str, Any], **_kwargs: Any
+) -> list[dict[str, Any]]:
     """List actions for a given app slug (does not require a connected account)."""
+    app = args.get("app", "")
     headers = await _headers()
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(
@@ -264,9 +277,6 @@ def _is_configured() -> bool:
 # ----- Tool registry binding -----
 # NOTE: the registry's `register()` signature requires `name=` and uses
 # `check_fn=` (not `availability=`). All three calls below must match that.
-import sys as _sys
-print(f"[PIPEDREAM_TRACER] module loaded — registry={'yes' if registry is not None else 'NONE'}, _is_configured()={_is_configured()}", file=_sys.stderr, flush=True)
-logger.info("[pipedream_tool] module loaded — registry=%s, _is_configured()=%s", "yes" if registry is not None else "NONE", _is_configured())
 if registry is not None:
     try:
         registry.register(
@@ -293,8 +303,5 @@ if registry is not None:
             check_fn=_is_configured,
             is_async=True,
         )
-        logger.info("[pipedream_tool] registered 3 tools under toolset 'earl-pipedream'")
     except Exception as e:  # pragma: no cover
-        logger.warning("[pipedream_tool] Could not register Pipedream tools with registry: %s", e)
-else:
-    logger.warning("[pipedream_tool] registry is None at import time — registration skipped")
+        logger.warning("Could not register Pipedream tools with registry: %s", e)
