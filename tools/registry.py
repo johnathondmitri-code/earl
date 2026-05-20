@@ -287,6 +287,29 @@ class ToolRegistry:
                         name, toolset, existing.toolset,
                     )
                     return
+            # GUARD RAIL: every tool schema must use "parameters" as the JSON
+            # Schema field name — that's what downstream serializers
+            # (anthropic_adapter, openai bridge, model_tools converters) look
+            # for when they build the LLM-facing tool list.
+            #
+            # Anthropic's API spec uses "input_schema" and a tool author
+            # copy-pasting from the Anthropic docs will hit this. The mistake
+            # is SILENT: the LLM still sees the tool name and description, so
+            # it tries to call it with whatever args it guesses — usually
+            # wrong. Catch it loudly here. (Earl issue: pipedream_action
+            # 2026-05-20.)
+            if isinstance(schema, dict) and "input_schema" in schema and "parameters" not in schema:
+                logger.error(
+                    "Tool '%s' (toolset '%s') registered with 'input_schema' "
+                    "key — downstream serializers read 'parameters'. The LLM "
+                    "will see an empty arg schema and call the tool blindly. "
+                    "Rename schema['input_schema'] → schema['parameters']. "
+                    "(Auto-correcting for this registration, but please fix "
+                    "the source.)",
+                    name, toolset,
+                )
+                schema = {**schema, "parameters": schema["input_schema"]}
+                schema.pop("input_schema", None)
             self._tools[name] = ToolEntry(
                 name=name,
                 toolset=toolset,

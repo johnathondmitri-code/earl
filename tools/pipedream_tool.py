@@ -146,7 +146,7 @@ TOOL_SCHEMA_ACTION = {
         "  account_id: 'apn_jEhK4e4'  (from pipedream_list_accounts)\n"
         "  configured_props: {'calendarId': 'primary', 'text': 'lunch at noon'}"
     ),
-    "input_schema": {
+    "parameters": {
         "type": "object",
         "properties": {
             "action_id": {
@@ -189,7 +189,7 @@ TOOL_SCHEMA_LIST_ACCOUNTS = {
         "List the third-party app accounts the workspace owner has connected. "
         "Use this to discover what's available before calling pipedream_action."
     ),
-    "input_schema": {"type": "object", "properties": {}},
+    "parameters": {"type": "object", "properties": {}},
 }
 
 TOOL_SCHEMA_LIST_ACTIONS = {
@@ -197,7 +197,7 @@ TOOL_SCHEMA_LIST_ACTIONS = {
     "description": (
         "List the available actions Pipedream exposes for a given app slug."
     ),
-    "input_schema": {
+    "parameters": {
         "type": "object",
         "properties": {
             "app": {
