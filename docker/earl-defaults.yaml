@@ -1,0 +1,81 @@
+# ============================================================================
+# Earl SaaS - workspace runtime defaults
+# ============================================================================
+# This file is copied to $EARL_HOME/config.yaml by start-earl.sh on every
+# boot. It overlays the Hermes DEFAULT_CONFIG with Earl-flavored choices
+# that match the "just works for the customer" goal.
+#
+# DO NOT hand-edit $EARL_HOME/config.yaml on a running sandbox; the next
+# boot will overwrite it. Per-workspace overrides should flow through the
+# SaaS provisioner as env vars or memory.json, not this file.
+#
+# Pattern: every key here was a place the customer would otherwise have to
+# make a decision they don't care about. We pick the answer for them.
+# ============================================================================
+
+# ── Long-term memory ────────────────────────────────────────────────────────
+# holographic = local SQLite store with FTS5 search, entity resolution
+# ("Maria" → which Maria), trust scoring, and HRR compositional retrieval.
+# Zero API keys, zero external infrastructure, persists in the sandbox at
+# $EARL_HOME/memory_store.db. The keep-alive cron keeps the same sandbox
+# alive so the DB survives across turns; sandbox replacement (rare) rebuilds
+# from zero, which is acceptable in v1.
+#
+# auto_extract: true tells the plugin to mine conversation turns for facts
+# without the agent having to call store_fact() explicitly. This is what
+# makes long-term memory feel magical instead of feeling like a tool the
+# agent has to remember to use.
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  # Bumped from 2200 to 3500 chars (~1300 tokens). A multi-month
+  # relationship with an owner accumulates more than 800 tokens of profile.
+  memory_char_limit: 3500
+  user_char_limit: 1375
+  provider: holographic
+
+plugins:
+  earl-memory-store:
+    # Default lives in $EARL_HOME so it survives the same way state.db does.
+    # The literal $EARL_HOME is a placeholder; cfg_get expands it via
+    # earl_constants.get_earl_home() at read time.
+    db_path: $EARL_HOME/memory_store.db
+    auto_extract: true
+    default_trust: 0.5
+    min_trust_threshold: 0.3
+    temporal_decay_half_life: 0   # 0 = never decay (we want long memory)
+
+# ── Approvals ───────────────────────────────────────────────────────────────
+# "smart" routes every dangerous-command approval through an auxiliary LLM
+# that auto-approves low-risk shell/filesystem operations. Without this the
+# customer's Telegram chat gets "approve this command?" prompts every time
+# Earl wants to read/write/exec anything, which kills the "AI employee"
+# feel. The two confirm flags are dead code paths in our deployment (no
+# slash menu, no /reload-mcp) so flip them off to remove any chance of
+# a confirmation message ever leaking through.
+approvals:
+  mode: smart
+  destructive_slash_confirm: false
+  mcp_reload_confirm: false
+
+# ── Telegram ────────────────────────────────────────────────────────────────
+# Native emoji reactions on inbound messages. 👀 = received, ✅ = done,
+# ❌ = failed. Feels like read-receipts from a coworker. Much more human
+# than text-based status messages.
+telegram:
+  reactions: true
+
+# ── Agent ───────────────────────────────────────────────────────────────────
+# Raise "still working" notification interval from 180s to 300s. At 180s
+# the message fires constantly during normal multi-step tool use and reads
+# as an AI status panel. At 5 minutes it only fires on genuinely long
+# tasks where the customer wonders if Earl is alive.
+agent:
+  gateway_notify_interval: 300
+
+# ── Display ─────────────────────────────────────────────────────────────────
+# Reinforce the env-var-driven setting from start-earl.sh. Either path
+# (this file OR EARL_TOOL_PROGRESS_MODE env var) suppresses the
+# "⚙️ pipedream_action..." style developer status bubbles.
+display:
+  tool_progress: off

@@ -83,6 +83,23 @@ else
   echo "WARNING: $SOUL_BASE missing — keeping whatever SOUL.md is already at $SOUL_TARGET" >&2
 fi
 
+# 3b. Earl SaaS workspace defaults (docker/earl-defaults.yaml → $EARL_HOME/config.yaml).
+#     Copies our "just works for the customer" config overlays on every boot:
+#       - memory.provider=holographic for real long-term memory
+#       - approvals.mode=smart so dangerous-command prompts don't spam chat
+#       - telegram.reactions=true for native read-receipts
+#       - display.tool_progress=off (belt-and-suspenders with EARL_TOOL_PROGRESS_MODE)
+#       - agent.gateway_notify_interval=300 so "still working" pings are rare
+#     See docker/earl-defaults.yaml for the full list and rationale.
+DEFAULTS_BASE="$EARL_REPO_DIR/docker/earl-defaults.yaml"
+DEFAULTS_TARGET="$EARL_HOME/config.yaml"
+if [ -f "$DEFAULTS_BASE" ]; then
+  cp "$DEFAULTS_BASE" "$DEFAULTS_TARGET"
+  echo "==> Wrote Earl defaults to $DEFAULTS_TARGET ($(wc -c < "$DEFAULTS_TARGET" | tr -d ' ') bytes)"
+else
+  echo "WARNING: $DEFAULTS_BASE missing — sandbox will run with stock Hermes defaults" >&2
+fi
+
 # 4. Verify the full Earl Agent surface imports + the workspace config loads.
 #    The template build already verified imports, but the boot-time pull may
 #    have introduced a regression — this catches it before the gateway tries
