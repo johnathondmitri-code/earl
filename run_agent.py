@@ -2129,7 +2129,15 @@ class AIAgent:
         for msg in reversed(history):
             if msg.get("role") != "tool":
                 continue
-            content = msg.get("content", "")
+            # `.get("content", "")` returns None when the key exists with None
+            # value (the default only fires when key is missing). Tools that
+            # return dict/list also need string-coercion before the `in` check.
+            content = msg.get("content") or ""
+            if not isinstance(content, str):
+                try:
+                    content = json.dumps(content, default=str)
+                except Exception:
+                    content = str(content)
             # Quick check: todo responses contain "todos" key
             if '"todos"' not in content:
                 continue

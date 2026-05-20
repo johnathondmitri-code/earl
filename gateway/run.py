@@ -16825,7 +16825,15 @@ class GatewayRunner:
                 has_voice_directive = False
                 for msg in result.get("messages", []):
                     if msg.get("role") in {"tool", "function"}:
-                        content = msg.get("content", "")
+                        # Defensive: `.get("content","")` returns None when
+                        # the key has value None, and tools can return
+                        # dict/list. Coerce to string for the `in` check.
+                        content = msg.get("content") or ""
+                        if not isinstance(content, str):
+                            try:
+                                content = json.dumps(content, default=str)
+                            except Exception:
+                                content = str(content)
                         if "MEDIA:" in content:
                             _TOOL_MEDIA_RE = re.compile(
                                 r'MEDIA:((?:/|~\/)\S+\.(?:png|jpe?g|gif|webp|'
