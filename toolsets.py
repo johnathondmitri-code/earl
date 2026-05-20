@@ -113,6 +113,23 @@ TOOLSETS = {
         "includes": []
     },
 
+    "pipedream": {
+        "description": (
+            "Pipedream Connect — invoke any of 3,000+ third-party app "
+            "actions (Gmail, Google Calendar, QuickBooks, GHL, ServiceTitan, "
+            "etc.) for which the workspace has OAuth'd accounts via the "
+            "Earl dashboard. Gated at the tool registry level by "
+            "EARL_PIPEDREAM_CLIENT_ID/SECRET/PROJECT_ID; the SaaS "
+            "provisioner sets these per workspace."
+        ),
+        "tools": [
+            "pipedream_action",
+            "pipedream_list_accounts",
+            "pipedream_list_actions",
+        ],
+        "includes": [],
+    },
+
     "video": {
         "description": "Video analysis and understanding tools (opt-in, not in default toolset)",
         "tools": ["video_analyze"],
