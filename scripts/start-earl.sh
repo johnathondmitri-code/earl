@@ -59,10 +59,28 @@ if [ -n "${EARL_MEMORY_JSON:-}" ]; then
   printf '%s' "$EARL_MEMORY_JSON" > "$EARL_MEMORY_PATH"
 fi
 
-# 3. Persona overlay
-if [ -n "${EARL_PERSONA_OVERLAY:-}" ]; then
-  echo "==> Applying persona overlay to docker/SOUL.md"
-  printf '%s' "$EARL_PERSONA_OVERLAY" > "$EARL_REPO_DIR/docker/SOUL.md"
+# 3. SOUL.md composition. The agent's prompt builder reads $EARL_HOME/SOUL.md
+#    (NOT the repo's docker/SOUL.md, which is a template). On every boot we
+#    rewrite $EARL_HOME/SOUL.md to be: Earl's canonical identity (the repo
+#    template) + an optional per-workspace persona overlay below it.
+#
+#    Doing this unconditionally — not just when EARL_PERSONA_OVERLAY is set —
+#    also guarantees we overwrite the bootstrap-seeded default that
+#    earl_cli/default_soul.py would write on first run. Without this, a
+#    sandbox booted before Earl's canonical identity was wired up would keep
+#    serving the old default forever.
+SOUL_BASE="$EARL_REPO_DIR/docker/SOUL.md"
+SOUL_TARGET="$EARL_HOME/SOUL.md"
+if [ -f "$SOUL_BASE" ]; then
+  cp "$SOUL_BASE" "$SOUL_TARGET"
+  if [ -n "${EARL_PERSONA_OVERLAY:-}" ]; then
+    echo "==> Applying workspace persona overlay to $SOUL_TARGET"
+    printf '\n\n## Workspace overlay\n\n%s\n' "$EARL_PERSONA_OVERLAY" >> "$SOUL_TARGET"
+  else
+    echo "==> Using canonical Earl identity (no workspace overlay)"
+  fi
+else
+  echo "WARNING: $SOUL_BASE missing — keeping whatever SOUL.md is already at $SOUL_TARGET" >&2
 fi
 
 # 4. Verify the full Earl Agent surface imports + the workspace config loads.

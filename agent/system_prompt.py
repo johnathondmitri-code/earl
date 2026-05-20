@@ -97,6 +97,22 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # Fallback to hardcoded identity
         stable_parts.append(DEFAULT_AGENT_IDENTITY)
 
+    # Earl: inject the per-workspace context (company memory, brand voice,
+    # escalation rules, etc.) right after the SOUL identity. This sits in the
+    # stable tier so prompt caches stay warm across turns within a workspace.
+    # Wrapped defensively so any failure in workspace-config code doesn't
+    # break the entire prompt.
+    try:
+        from agent.earl_workspace_prompt import build_workspace_prompt_section
+        _workspace_section = build_workspace_prompt_section()
+        if _workspace_section:
+            stable_parts.append(_workspace_section)
+    except Exception as _earl_exc:  # noqa: BLE001 — defense in depth
+        import logging as _earl_logging
+        _earl_logging.getLogger(__name__).warning(
+            "Earl workspace prompt section failed to load: %s", _earl_exc
+        )
+
     # Pointer to the earl skill + docs for user questions about Earl itself.
     stable_parts.append(EARL_AGENT_HELP_GUIDANCE)
 
