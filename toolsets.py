@@ -70,6 +70,13 @@ _EARL_CORE_TOOLS = [
     "kanban_unblock",
     # Computer use (macOS, gated on cua-driver being installed via check_fn)
     "computer_use",
+    # Pipedream Connect — execute actions against any of the 3,000+ apps the
+    # owner has OAuth'd through the Earl dashboard. Gated via check_fn in
+    # tools/pipedream_tool.py: requires EARL_PIPEDREAM_CLIENT_ID/SECRET/
+    # PROJECT_ID env vars (set by the SaaS provisioner). Workspaces that
+    # haven't connected anything via the dashboard still see the schema and
+    # can call `pipedream_list_accounts` to learn that.
+    "pipedream_action", "pipedream_list_accounts", "pipedream_list_actions",
 ]
 
 
