@@ -137,6 +137,11 @@ async function main() {
     // ----------------------------------------------------------------------------
     console.log("[4/6] Running sandbox-install.sh (~60-90s for uv + deps)…");
     const installT = Date.now();
+    const pipedreamProjectId = process.env.PIPEDREAM_PROJECT_ID ?? "";
+    const pipedreamClientId = process.env.PIPEDREAM_CLIENT_ID ?? "";
+    const pipedreamClientSecret = process.env.PIPEDREAM_CLIENT_SECRET ?? "";
+    const pipedreamEnv = process.env.PIPEDREAM_ENVIRONMENT ?? "production";
+
     const envExports = [
       `export EARL_HOME=$HOME/earl`,
       `export EARL_REPO_DIR=$HOME/earl/repo`,
@@ -149,6 +154,13 @@ async function main() {
       `export EARL_ANTHROPIC_API_KEY="${ANTHROPIC_KEY}"`,
       `export EARL_TELEGRAM_BOT_TOKEN="${TELEGRAM_TOKEN}"`,
       `export EARL_LOCALE=en`,
+      // Pipedream — optional. If unset in the local env, these vars are empty
+      // strings; the agent's pipedream_tool gracefully reports "not configured."
+      `export EARL_PIPEDREAM_PROJECT_ID="${pipedreamProjectId}"`,
+      `export EARL_PIPEDREAM_CLIENT_ID="${pipedreamClientId}"`,
+      `export EARL_PIPEDREAM_CLIENT_SECRET="${pipedreamClientSecret}"`,
+      `export EARL_PIPEDREAM_ENVIRONMENT="${pipedreamEnv}"`,
+      `export EARL_PIPEDREAM_EXTERNAL_USER_ID="${WORKSPACE_ID}"`,
       `export PATH=$HOME/.local/bin:$PATH`,
     ].join("\n");
 
