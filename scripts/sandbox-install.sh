@@ -128,11 +128,19 @@ export GATEWAY_ALLOW_ALL_USERS="${GATEWAY_ALLOW_ALL_USERS:-true}"
 echo "==> Starting Telegram gateway"
 cd "$EARL_REPO_DIR"
 nohup python -m gateway.run > "$LOGS/gateway.log" 2>&1 &
-echo $! > "$EARL_HOME/gateway.pid"
+WRAPPER_PID=$!
+echo $WRAPPER_PID > "$EARL_HOME/gateway.pid"
 
-# Wait a moment + verify the process is alive
-sleep 3
-if kill -0 "$(cat "$EARL_HOME/gateway.pid")" 2>/dev/null; then
+# Give it a moment to boot. The gateway connects to Telegram and starts
+# polling; that connection happens ~3-5s in. Wait + verify by looking for
+# the "Connected to Telegram" log line OR a running `python -m gateway.run`
+# process (since nohup spawns a child the wrapper pid doesn't always match).
+sleep 5
+if pgrep -f "python -m gateway.run" >/dev/null 2>&1 || grep -q "Connected to Telegram" "$LOGS/gateway.log" 2>/dev/null; then
+  ACTUAL_PID=$(pgrep -f "python -m gateway.run" | head -1)
+  if [ -n "$ACTUAL_PID" ]; then
+    echo "$ACTUAL_PID" > "$EARL_HOME/gateway.pid"
+  fi
   echo "==> Earl gateway running (pid $(cat "$EARL_HOME/gateway.pid"))"
   echo "==> Earl install complete at $(date -Iseconds)"
   exit 0
