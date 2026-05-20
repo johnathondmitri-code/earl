@@ -4607,6 +4607,17 @@ class TelegramAdapter(BasePlatformAdapter):
             return
         if not self._should_process_message(msg):
             return
+        # Per-workspace kill switch. When the SaaS dashboard pauses the
+        # workspace (businesses.paused = true), we drop the message and
+        # never invoke the agent loop. Owner re-enables via /settings.
+        import os as _os
+        if _os.environ.get("EARL_WORKSPACE_PAUSED", "0") == "1":
+            import logging as _logging
+            _logging.getLogger(__name__).info(
+                "[Telegram] dropping inbound from %s — workspace paused",
+                msg.chat_id,
+            )
+            return
         await self._ensure_forum_commands(update.message)
 
         event = self._build_message_event(msg, MessageType.TEXT, update_id=update.update_id)
