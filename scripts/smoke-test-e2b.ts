@@ -145,18 +145,22 @@ async function main() {
 
     console.log(`[2/3] Running ${USE_TEMPLATE ? "start-earl.sh (fast)" : "sandbox-install.sh (slow)"}…`);
 
-    // Pull latest code before running — template may lag main. Catches the
-    // chicken-and-egg case where start-earl.sh isn't in the templated repo
-    // because the template was built before we added it.
+    // Pull (or freshly clone) the Earl repo. The template ships with it
+    // pre-cloned at $EARL_REPO_DIR; the slow path needs to clone from scratch.
+    // Either way we pull on top to ensure we run the freshest scripts.
     const start = await sandbox.commands.run(
       `set -e
 ${envExports}
+mkdir -p "$EARL_HOME"
 if [ -d "$EARL_REPO_DIR/.git" ]; then
   ( cd "$EARL_REPO_DIR" && git pull --rebase --autostash --quiet 2>&1 ) || echo "git pull skipped/failed"
+else
+  echo "==> Cloning Earl Agent repo into $EARL_REPO_DIR"
+  git clone --depth 1 https://github.com/johnathondmitri-code/earl.git "$EARL_REPO_DIR" 2>&1
 fi
 if [ ! -f "${scriptToRun}" ]; then
   echo "ERROR: script not found at ${scriptToRun}" >&2
-  ls "$EARL_REPO_DIR/scripts/" >&2
+  ls -la "$EARL_REPO_DIR/scripts/" 2>&1 >&2 || true
   exit 4
 fi
 chmod +x ${scriptToRun}

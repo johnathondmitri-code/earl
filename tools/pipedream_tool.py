@@ -262,25 +262,33 @@ def _is_configured() -> bool:
 
 
 # ----- Tool registry binding -----
+# NOTE: the registry's `register()` signature requires `name=` and uses
+# `check_fn=` (not `availability=`). All three calls below must match that.
 if registry is not None:
     try:
         registry.register(
+            name=TOOL_SCHEMA_ACTION["name"],
+            toolset="earl-pipedream",
             schema=TOOL_SCHEMA_ACTION,
             handler=pipedream_action,
-            toolset="earl-pipedream",
-            availability=_is_configured,
+            check_fn=_is_configured,
+            is_async=True,
         )
         registry.register(
+            name=TOOL_SCHEMA_LIST_ACCOUNTS["name"],
+            toolset="earl-pipedream",
             schema=TOOL_SCHEMA_LIST_ACCOUNTS,
             handler=pipedream_list_accounts,
-            toolset="earl-pipedream",
-            availability=_is_configured,
+            check_fn=_is_configured,
+            is_async=True,
         )
         registry.register(
+            name=TOOL_SCHEMA_LIST_ACTIONS["name"],
+            toolset="earl-pipedream",
             schema=TOOL_SCHEMA_LIST_ACTIONS,
             handler=pipedream_list_actions,
-            toolset="earl-pipedream",
-            availability=_is_configured,
+            check_fn=_is_configured,
+            is_async=True,
         )
     except Exception as e:  # pragma: no cover
         logger.warning("Could not register Pipedream tools with registry: %s", e)
