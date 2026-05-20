@@ -184,7 +184,7 @@ class TestOwnerPidCrossProcess:
     """Tests for owner_pid-based cross-process safe reaping.
 
     The owner_pid file records which hermes process owns a daemon so that
-    concurrent hermes processes don't reap each other's active browser
+    concurrent earl processes don't reap each other's active browser
     sessions.  Added to fix orphan accumulation from crashed processes.
     """
 

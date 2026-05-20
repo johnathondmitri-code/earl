@@ -44,7 +44,7 @@ IGNORED_PATTERNS = [
     re.compile(r"^GitHub\s*Actions?$", re.IGNORECASE),
     re.compile(r"^dependabot", re.IGNORECASE),
     re.compile(r"^renovate", re.IGNORECASE),
-    re.compile(r"^Hermes\s+(Agent|Audit)$", re.IGNORECASE),
+    re.compile(r"^Earl\s+(Agent|Audit)$", re.IGNORECASE),
     re.compile(r"^Ubuntu$", re.IGNORECASE),
 ]
 
@@ -52,9 +52,9 @@ IGNORED_EMAILS = {
     "noreply@anthropic.com",
     "noreply@github.com",
     "cursoragent@cursor.com",
-    "hermes@nousresearch.com",
-    "hermes-audit@example.com",
-    "hermes@habibilabs.dev",
+    "earl@nousresearch.com",
+    "earl-audit@example.com",
+    "earl@habibilabs.dev",
 }
 
 
@@ -96,7 +96,7 @@ def gh_pr_list():
         result = subprocess.run(
             [
                 "gh", "pr", "list",
-                "--repo", "NousResearch/hermes-agent",
+                "--repo", "NousResearch/earl",
                 "--state", "merged",
                 "--json", "number,title,body,author,mergedAt",
                 "--limit", "300",

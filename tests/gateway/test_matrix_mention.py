@@ -98,7 +98,7 @@ class TestIsBotMentioned:
         assert self.adapter._is_bot_mentioned("HERMES can you help?")
 
     def test_matrix_pill_in_formatted_body(self):
-        html = '<a href="https://matrix.to/#/@hermes:example.org">Hermes</a> help'
+        html = '<a href="https://matrix.to/#/.earl:example.org">Hermes</a> help'
         assert self.adapter._is_bot_mentioned("Hermes help", html)
 
     def test_no_mention(self):
@@ -303,7 +303,7 @@ async def test_require_mention_html_pill(monkeypatch):
     monkeypatch.setenv("MATRIX_AUTO_THREAD", "false")
 
     adapter = _make_adapter()
-    formatted = '<a href="https://matrix.to/#/@hermes:example.org">Hermes</a> help'
+    formatted = '<a href="https://matrix.to/#/.earl:example.org">Hermes</a> help'
     event = _make_event("Hermes help", formatted_body=formatted)
 
     await adapter._on_room_message(event)

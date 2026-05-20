@@ -1,4 +1,4 @@
-"""Tests for the Hermes plugin system (hermes_cli.plugins)."""
+"""Tests for the Hermes plugin system (earl_cli.plugins)."""
 
 import logging
 import os
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from hermes_cli.plugins import (
+from earl_cli.plugins import (
     ENTRY_POINTS_GROUP,
     VALID_HOOKS,
     LoadedPlugin,
@@ -57,11 +57,11 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     )
 
     if auto_enable:
-        # Write/merge plugins.enabled in <HERMES_HOME>/config.yaml.
-        # Config is always read from HERMES_HOME (not from the project
+        # Write/merge plugins.enabled in <EARL_HOME>/config.yaml.
+        # Config is always read from EARL_HOME (not from the project
         # dir for project plugins), so that's where we opt in.
         import os
-        hermes_home_str = os.environ.get("HERMES_HOME")
+        hermes_home_str = os.environ.get("EARL_HOME")
         if hermes_home_str:
             hermes_home = Path(hermes_home_str)
         else:
@@ -90,10 +90,10 @@ class TestPluginDiscovery:
     """Tests for plugin discovery from directories and entry points."""
 
     def test_discover_user_plugins(self, tmp_path, monkeypatch):
-        """Plugins in ~/.hermes/plugins/ are discovered."""
+        """Plugins in ~/.earl/plugins/ are discovered."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "hello_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -102,12 +102,12 @@ class TestPluginDiscovery:
         assert mgr._plugins["hello_plugin"].enabled
 
     def test_discover_project_plugins(self, tmp_path, monkeypatch):
-        """Plugins in ./.hermes/plugins/ are discovered."""
+        """Plugins in ./.earl/plugins/ are discovered."""
         project_dir = tmp_path / "project"
         project_dir.mkdir()
         monkeypatch.chdir(project_dir)
-        monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", "true")
-        plugins_dir = project_dir / ".hermes" / "plugins"
+        monkeypatch.setenv("EARL_ENABLE_PROJECT_PLUGINS", "true")
+        plugins_dir = project_dir / ".earl" / "plugins"
         _make_plugin_dir(plugins_dir, "proj_plugin")
 
         mgr = PluginManager()
@@ -121,7 +121,7 @@ class TestPluginDiscovery:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
         monkeypatch.chdir(project_dir)
-        plugins_dir = project_dir / ".hermes" / "plugins"
+        plugins_dir = project_dir / ".earl" / "plugins"
         _make_plugin_dir(plugins_dir, "proj_plugin")
 
         mgr = PluginManager()
@@ -133,7 +133,7 @@ class TestPluginDiscovery:
         """Calling discover_and_load() twice does not duplicate plugins."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "once_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -150,7 +150,7 @@ class TestPluginDiscovery:
         """Directories without plugin.yaml are silently skipped."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         (plugins_dir / "no_manifest").mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -164,7 +164,7 @@ class TestPluginDiscovery:
 
     def test_entry_points_scanned(self, tmp_path, monkeypatch):
         """Entry-point based plugins are discovered (mocked)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         fake_module = types.ModuleType("fake_ep_plugin")
         fake_module.register = lambda ctx: None  # type: ignore[attr-defined]
@@ -205,7 +205,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["bad_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -228,7 +228,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["no_reg"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -241,7 +241,7 @@ class TestPluginLoading:
         """Directory plugins are importable under hermes_plugins.<name>."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "ns_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         # Clean up any prior namespace module
         sys.modules.pop("hermes_plugins.ns_plugin", None)
@@ -281,7 +281,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -311,7 +311,7 @@ class TestPluginLoading:
             "# This plugin inspects MemoryProvider docs but isn't one.\n"
             "def register(ctx):\n    pass\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -345,7 +345,7 @@ class TestPluginHooks:
                 'lambda **kw: {"action": "skip", "reason": "test"})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -366,7 +366,7 @@ class TestPluginHooks:
             plugins_dir, "hook_plugin",
             register_body='ctx.register_hook("pre_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -381,7 +381,7 @@ class TestPluginHooks:
             plugins_dir, "bad_hook",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: 1/0)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -399,7 +399,7 @@ class TestPluginHooks:
                 'lambda **kw: {"context": "memory from plugin"})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -416,7 +416,7 @@ class TestPluginHooks:
             plugins_dir, "none_hook",
             register_body='ctx.register_hook("post_llm_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -435,7 +435,7 @@ class TestPluginHooks:
                 '"mc": kw.get("message_count"), "tc": kw.get("tool_count")})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -463,7 +463,7 @@ class TestPluginHooks:
                 'lambda **kw: f"{kw[\'command\']}|{kw[\'returncode\']}|{kw[\'env_type\']}|{kw[\'task_id\']}|{len(kw[\'output\'])}")'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -485,9 +485,9 @@ class TestPluginHooks:
             plugins_dir, "warn_plugin",
             register_body='ctx.register_hook("on_banana", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="earl_cli.plugins"):
             mgr = PluginManager()
             mgr.discover_and_load()
 
@@ -499,7 +499,7 @@ class TestPreToolCallBlocking:
 
     def test_block_message_returned_for_valid_directive(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "block", "message": "blocked by plugin"}],
         )
         assert get_pre_tool_call_block_message("todo", {}, task_id="t1") == "blocked by plugin"
@@ -507,7 +507,7 @@ class TestPreToolCallBlocking:
     def test_invalid_returns_are_ignored(self, monkeypatch):
         """Various malformed hook returns should not trigger a block."""
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [
                 "block",                                 # not a dict
                 123,                                     # not a dict
@@ -521,14 +521,14 @@ class TestPreToolCallBlocking:
 
     def test_none_when_no_hooks(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         assert get_pre_tool_call_block_message("web_search", {"q": "test"}) is None
 
     def test_first_valid_block_wins(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "allow"},
                 {"action": "block", "message": "first blocker"},
@@ -542,13 +542,13 @@ class TestThreadToolWhitelist:
     """Tests for the thread-local tool whitelist used by background review forks."""
 
     def test_allowed_tool_passes_through_to_hooks(self, monkeypatch):
-        from hermes_cli.plugins import (
+        from earl_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist({"memory", "skill_manage"})
@@ -558,13 +558,13 @@ class TestThreadToolWhitelist:
             clear_thread_tool_whitelist()
 
     def test_disallowed_tool_blocked_with_message(self, monkeypatch):
-        from hermes_cli.plugins import (
+        from earl_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist(
@@ -577,13 +577,13 @@ class TestThreadToolWhitelist:
             clear_thread_tool_whitelist()
 
     def test_clear_restores_unrestricted_behavior(self, monkeypatch):
-        from hermes_cli.plugins import (
+        from earl_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist({"memory"})
@@ -596,13 +596,13 @@ class TestThreadToolWhitelist:
         """Setting a whitelist in one thread must NOT leak into another."""
         import threading
 
-        from hermes_cli.plugins import (
+        from earl_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "earl_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
 
@@ -652,7 +652,7 @@ class TestPluginContext:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["tool_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -692,7 +692,7 @@ class TestPluginContext:
             (hermes_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["shadow_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
             with caplog.at_level(logging.ERROR, logger="tools.registry"):
                 mgr = PluginManager()
@@ -735,7 +735,7 @@ class TestPluginContext:
             (hermes_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["override_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
             with caplog.at_level(logging.INFO, logger="tools.registry"):
                 mgr = PluginManager()
@@ -776,7 +776,7 @@ class TestPluginContext:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["new_override_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
         try:
             mgr = PluginManager()
@@ -794,7 +794,7 @@ class TestPluginToolVisibility:
 
     def test_plugin_tools_in_definitions(self, tmp_path, monkeypatch):
         """Plugin tools are included when their toolset is in enabled_toolsets."""
-        import hermes_cli.plugins as plugins_mod
+        import earl_cli.plugins as plugins_mod
 
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         plugin_dir = plugins_dir / "vis_plugin"
@@ -813,7 +813,7 @@ class TestPluginToolVisibility:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["vis_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -853,7 +853,7 @@ class TestPluginManagerList:
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "zulu")
         _make_plugin_dir(plugins_dir, "alpha")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -869,7 +869,7 @@ class TestPluginManagerList:
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "alpha")
         _make_plugin_dir(plugins_dir, "beta")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -909,7 +909,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "basic_plugin",
             '{"context": "basic context"}',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -929,7 +929,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "str_plugin",
             '"plain string context"',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -952,7 +952,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "bbb_guardrail",
             '{"context": "guardrail text"}',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -985,7 +985,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "ccc_plain",
             '"plain text C"',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1074,7 +1074,7 @@ class TestPluginCommands:
         manifest = PluginManifest(name="test-plugin", source="user")
         ctx = PluginContext(manifest, mgr)
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="earl_cli.plugins"):
             ctx.register_command("", lambda a: a)
         assert len(mgr._plugin_commands) == 0
         assert "empty name" in caplog.text
@@ -1085,7 +1085,7 @@ class TestPluginCommands:
         manifest = PluginManifest(name="test-plugin", source="user")
         ctx = PluginContext(manifest, mgr)
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="earl_cli.plugins"):
             ctx.register_command("help", lambda a: a)
         assert "help" not in mgr._plugin_commands
         assert "conflicts" in caplog.text.lower()
@@ -1108,14 +1108,14 @@ class TestPluginCommands:
         handler = lambda args: f"result: {args}"
         ctx.register_command("mycmd", handler, description="test")
 
-        with patch("hermes_cli.plugins._plugin_manager", mgr):
+        with patch("earl_cli.plugins._plugin_manager", mgr):
             result = get_plugin_command_handler("mycmd")
             assert result is handler
 
     def test_get_plugin_command_handler_not_found(self):
         """get_plugin_command_handler() returns None for unregistered commands."""
         mgr = PluginManager()
-        with patch("hermes_cli.plugins._plugin_manager", mgr):
+        with patch("earl_cli.plugins._plugin_manager", mgr):
             assert get_plugin_command_handler("nonexistent") is None
 
     def test_get_plugin_commands_returns_dict(self):
@@ -1126,7 +1126,7 @@ class TestPluginCommands:
         ctx.register_command("cmd-a", lambda a: a, description="A")
         ctx.register_command("cmd-b", lambda a: a, description="B")
 
-        with patch("hermes_cli.plugins._plugin_manager", mgr):
+        with patch("earl_cli.plugins._plugin_manager", mgr):
             cmds = get_plugin_commands()
             assert "cmd-a" in cmds
             assert "cmd-b" in cmds
@@ -1140,9 +1140,9 @@ class TestPluginCommands:
             "cmd-plugin",
             register_body='ctx.register_command("lazycmd", lambda a: f"ok:{a}", description="Lazy")',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
-        import hermes_cli.plugins as plugins_mod
+        import earl_cli.plugins as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             handler = get_plugin_command_handler("lazycmd")
@@ -1157,9 +1157,9 @@ class TestPluginCommands:
             "cmd-plugin",
             register_body='ctx.register_command("lazycmd", lambda a: a, description="Lazy")',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
-        import hermes_cli.plugins as plugins_mod
+        import earl_cli.plugins as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             cmds = get_plugin_commands()
@@ -1198,9 +1198,9 @@ class TestPluginCommands:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["engine-plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
-        import hermes_cli.plugins as plugins_mod
+        import earl_cli.plugins as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             engine = plugins_mod.get_plugin_context_engine()
@@ -1216,7 +1216,7 @@ class TestPluginCommands:
                 'ctx.register_command("mycmd", lambda a: "ok", description="Test")'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1228,9 +1228,9 @@ class TestPluginCommands:
     def test_commands_in_list_plugins_output(self, tmp_path, monkeypatch):
         """list_plugins() includes command count."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
-        # Set HERMES_HOME BEFORE _make_plugin_dir so auto-enable targets
+        # Set EARL_HOME BEFORE _make_plugin_dir so auto-enable targets
         # the right config.yaml.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes_test"))
         _make_plugin_dir(
             plugins_dir, "cmd-plugin",
             register_body=(
@@ -1292,7 +1292,7 @@ class TestPluginCommandResultResolution:
         async def _handler():
             return "threaded-ok"
 
-        monkeypatch.setattr("hermes_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("earl_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
         assert resolve_plugin_command_result(_handler()) == "threaded-ok"
 
     def test_running_loop_timeout_does_not_hang_forever(self, monkeypatch):
@@ -1306,8 +1306,8 @@ class TestPluginCommandResultResolution:
             await _asyncio.sleep(10)
             return "should-not-reach"
 
-        monkeypatch.setattr("hermes_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
-        monkeypatch.setattr("hermes_cli.plugins._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
+        monkeypatch.setattr("earl_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("earl_cli.plugins._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
 
         import pytest
         with pytest.raises(TimeoutError):
@@ -1329,7 +1329,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"result": "ok"}'
 
-        with patch("hermes_cli.plugins.PluginContext.dispatch_tool.__module__", "hermes_cli.plugins"):
+        with patch("earl_cli.plugins.PluginContext.dispatch_tool.__module__", "earl_cli.plugins"):
             with patch.dict("sys.modules", {}):
                 with patch("tools.registry.registry", mock_registry):
                     result = ctx.dispatch_tool("web_search", {"query": "test"})
@@ -1447,12 +1447,12 @@ class TestPluginDispatchTool:
 
 
 class TestPluginDebugLogging:
-    """HERMES_PLUGINS_DEBUG opt-in stderr handler for plugin developers."""
+    """EARL_PLUGINS_DEBUG opt-in stderr handler for plugin developers."""
 
     def test_debug_handler_not_installed_when_env_var_absent(self, monkeypatch):
         """Without the env var, no stderr handler is attached."""
-        monkeypatch.delenv("HERMES_PLUGINS_DEBUG", raising=False)
-        from hermes_cli import plugins as plugins_mod
+        monkeypatch.delenv("EARL_PLUGINS_DEBUG", raising=False)
+        from earl_cli import plugins as plugins_mod
 
         # Snapshot, then force a re-evaluation.
         original_installed = plugins_mod._DEBUG_HANDLER_INSTALLED
@@ -1471,9 +1471,9 @@ class TestPluginDebugLogging:
             plugins_mod.logger.handlers = original_handlers
 
     def test_debug_handler_installed_when_env_var_set(self, monkeypatch):
-        """With HERMES_PLUGINS_DEBUG=1, a DEBUG-level stderr handler is attached."""
-        monkeypatch.setenv("HERMES_PLUGINS_DEBUG", "1")
-        from hermes_cli import plugins as plugins_mod
+        """With EARL_PLUGINS_DEBUG=1, a DEBUG-level stderr handler is attached."""
+        monkeypatch.setenv("EARL_PLUGINS_DEBUG", "1")
+        from earl_cli import plugins as plugins_mod
 
         original_installed = plugins_mod._DEBUG_HANDLER_INSTALLED
         original_debug = plugins_mod._PLUGINS_DEBUG
@@ -1499,8 +1499,8 @@ class TestPluginDebugLogging:
 
     def test_debug_handler_idempotent(self, monkeypatch):
         """Calling install twice (without force) does not double-attach."""
-        monkeypatch.setenv("HERMES_PLUGINS_DEBUG", "1")
-        from hermes_cli import plugins as plugins_mod
+        monkeypatch.setenv("EARL_PLUGINS_DEBUG", "1")
+        from earl_cli import plugins as plugins_mod
 
         original_installed = plugins_mod._DEBUG_HANDLER_INSTALLED
         original_debug = plugins_mod._PLUGINS_DEBUG

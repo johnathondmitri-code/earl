@@ -1,6 +1,6 @@
 """Test that overlay providers with mismatched models.dev keys resolve correctly.
 
-HERMES_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot") while
+EARL_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot") while
 _PROVIDER_MODELS and config.yaml use Hermes IDs ("copilot").  The slug
 resolution in list_authenticated_providers() Section 2 must bridge this gap.
 
@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.model_switch import list_authenticated_providers
+from earl_cli.model_switch import list_authenticated_providers
 
 
 # -- Copilot slug resolution (env var path) ----------------------------------
@@ -48,7 +48,7 @@ def test_copilot_no_duplicate_entries():
 
 def test_kimi_for_coding_alias():
     """resolve_provider('kimi-for-coding') should return 'kimi-coding'."""
-    from hermes_cli.auth import resolve_provider
+    from earl_cli.auth import resolve_provider
 
     result = resolve_provider("kimi-for-coding")
     assert result == "kimi-coding"
@@ -89,7 +89,7 @@ def test_mapped_provider_credential_pool_visibility(monkeypatch):
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {"google-ai-studio": {"env": ["GEMINI_API_KEY"]}})
     monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {"gemini": "google-ai-studio"})
     monkeypatch.setattr(
-        "hermes_cli.auth._load_auth_store",
+        "earl_cli.auth._load_auth_store",
         lambda: {"providers": {}, "credential_pool": {"gemini": {"token": "fake"}}},
     )
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)

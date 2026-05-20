@@ -1,7 +1,7 @@
 """Tests for _coalesce_session_name_args — multi-word session name merging."""
 
 import pytest
-from hermes_cli.main import _coalesce_session_name_args
+from earl_cli.main import _coalesce_session_name_args
 
 
 class TestCoalesceSessionNameArgs:
@@ -77,7 +77,7 @@ class TestCoalesceSessionNameArgs:
     # ── combined flags ───────────────────────────────────────────────────
 
     def test_worktree_and_continue_multiword(self):
-        """hermes -w -c Pokemon Agent Dev (the original failing case)"""
+        """earl -w -c Pokemon Agent Dev (the original failing case)"""
         assert _coalesce_session_name_args(
             ["-w", "-c", "Pokemon", "Agent", "Dev"]
         ) == ["-w", "-c", "Pokemon Agent Dev"]
@@ -91,7 +91,7 @@ class TestCoalesceSessionNameArgs:
     # ── passthrough (no session flags) ───────────────────────────────────
 
     def test_no_session_flags_passthrough(self):
-        """hermes -w chat -q hello (nothing to merge)"""
+        """earl -w chat -q hello (nothing to merge)"""
         result = _coalesce_session_name_args(["-w", "chat", "-q", "hello"])
         assert result == ["-w", "chat", "-q", "hello"]
 

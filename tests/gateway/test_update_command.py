@@ -50,12 +50,12 @@ class TestHandleUpdateCommand:
     async def test_managed_install_returns_package_manager_guidance(self, monkeypatch):
         runner = _make_runner()
         event = _make_event()
-        monkeypatch.setenv("HERMES_MANAGED", "homebrew")
+        monkeypatch.setenv("EARL_MANAGED", "homebrew")
 
         result = await runner._handle_update_command(event)
 
         assert "managed by Homebrew" in result
-        assert "brew upgrade hermes-agent" in result
+        assert "brew upgrade earl" in result
 
     @pytest.mark.asyncio
     async def test_no_git_directory(self, tmp_path):
@@ -81,7 +81,7 @@ class TestHandleUpdateCommand:
             # The handler does Path(__file__).parent.parent.resolve()
             # We need to make project_root / '.git' not exist.
             # Since Path(__file__) resolves to the real gateway/run.py,
-            # project_root will be the real hermes-agent dir (which HAS .git).
+            # project_root will be the real earl dir (which HAS .git).
             # Patch Path to control this.
             original_path = Path
 
@@ -100,7 +100,7 @@ class TestHandleUpdateCommand:
 
     @pytest.mark.asyncio
     async def test_no_hermes_binary(self, tmp_path):
-        """Returns error when hermes is not on PATH and hermes_cli is not importable."""
+        """Returns error when hermes is not on PATH and earl_cli is not importable."""
         runner = _make_runner()
         event = _make_event()
 
@@ -123,7 +123,7 @@ class TestHandleUpdateCommand:
 
     @pytest.mark.asyncio
     async def test_fallback_to_sys_executable(self, tmp_path):
-        """Falls back to sys.executable -m hermes_cli.main when hermes not on PATH."""
+        """Falls back to sys.executable -m earl_cli.main when hermes not on PATH."""
         runner = _make_runner()
         event = _make_event()
 
@@ -148,9 +148,9 @@ class TestHandleUpdateCommand:
 
         assert "Starting Hermes update" in result
         call_args = mock_popen.call_args[0][0]
-        # The update_cmd uses sys.executable -m hermes_cli.main
+        # The update_cmd uses sys.executable -m earl_cli.main
         joined = " ".join(call_args) if isinstance(call_args, list) else call_args
-        assert "hermes_cli.main" in joined or "bash" in call_args[0]
+        assert "earl_cli.main" in joined or "bash" in call_args[0]
 
     @pytest.mark.asyncio
     async def test_resolve_hermes_bin_prefers_which(self, tmp_path):
@@ -173,7 +173,7 @@ class TestHandleUpdateCommand:
              patch("importlib.util.find_spec", return_value=fake_spec):
             result = _resolve_hermes_bin()
 
-        assert result == [sys.executable, "-m", "hermes_cli.main"]
+        assert result == [sys.executable, "-m", "earl_cli.main"]
 
     @pytest.mark.asyncio
     async def test_resolve_hermes_bin_returns_none_when_both_fail(self):

@@ -19,7 +19,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from hermes_cli import kanban_db as kb
+from earl_cli import kanban_db as kb
 
 
 # ---------------------------------------------------------------------------
@@ -47,10 +47,10 @@ def _load_plugin_router():
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
-    home = tmp_path / ".hermes"
+    """Isolated EARL_HOME with an empty kanban DB."""
+    home = tmp_path / ".earl"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

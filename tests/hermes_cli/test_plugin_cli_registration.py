@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from hermes_cli.plugins import (
+from earl_cli.plugins import (
     PluginContext,
     PluginManager,
     PluginManifest,

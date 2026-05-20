@@ -22,16 +22,16 @@ import pytest
 
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".earl"
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     import importlib
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import earl_constants
+    importlib.reload(earl_constants)
     from agent import curator
     importlib.reload(curator)
     yield curator
@@ -759,16 +759,16 @@ def test_reconcile_absorbed_into_beats_everything_else(curator_env):
         removed=["pr-review-format"],
         heuristic={"consolidated": [], "pruned": [{"name": "pr-review-format"}]},
         model_block={"consolidations": [], "prunings": []},  # model forgot YAML block
-        destinations={"hermes-agent-dev"},
+        destinations={"earl-dev"},
         absorbed_declarations={
-            "pr-review-format": {"into": "hermes-agent-dev", "declared": True},
+            "pr-review-format": {"into": "earl-dev", "declared": True},
         },
     )
     assert len(out["consolidated"]) == 1
     assert out["pruned"] == []
     e = out["consolidated"][0]
     assert e["name"] == "pr-review-format"
-    assert e["into"] == "hermes-agent-dev"
+    assert e["into"] == "earl-dev"
     assert "absorbed_into" in e["source"]
 
 

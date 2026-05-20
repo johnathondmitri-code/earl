@@ -122,7 +122,7 @@ class TestSubstringFalsePositivesAreRejected:
     def test_substring_inside_url_without_entity(self):
         """@handle inside a URL produces a URL entity, not a MENTION entity."""
         adapter = _make_adapter()
-        msg = _message(text="see https://example.com/@hermes_bot for details")
+        msg = _message(text="see https://example.com/.earl_bot for details")
         assert adapter._message_mentions_bot(msg) is False
 
     def test_substring_inside_code_block_without_entity(self):
@@ -174,8 +174,8 @@ class TestCaseInsensitivity:
 
     def test_uppercase_mention(self):
         adapter = _make_adapter()
-        text = "hi @HERMES_BOT"
-        msg = _message(text=text, entities=[_mention_entity(text, mention="@HERMES_BOT")])
+        text = "hi @EARL_BOT"
+        msg = _message(text=text, entities=[_mention_entity(text, mention="@EARL_BOT")])
         assert adapter._message_mentions_bot(msg) is True
 
     def test_mixed_case_mention(self):

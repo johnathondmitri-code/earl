@@ -4,7 +4,7 @@ This file is the canary. If anyone removes a guard or weakens it, these
 tests fail. If anyone adds a NEW kill primitive to the codebase without
 adding it to the guard, the corresponding test added here will fail too.
 
-The guard exists to protect the developer's live ``hermes-gateway`` process
+The guard exists to protect the developer's live ``earl-gateway`` process
 from being SIGTERMed by tests. See PR #23397 for the original incident
 (5+ live gateway kills in 3 days). Per Teknium 2026-05-10:
 
@@ -53,25 +53,25 @@ def test_os_killpg_blocks_foreign_pgid():
 
 def test_subprocess_run_systemctl_restart_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["systemctl", "--user", "restart", "hermes-gateway"])
+        subprocess.run(["systemctl", "--user", "restart", "earl-gateway"])
 
 
 def test_subprocess_run_full_path_systemctl_blocked():
     """``/usr/bin/systemctl`` (full path) must be blocked too."""
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["/usr/bin/systemctl", "--user", "stop", "hermes-gateway"])
+        subprocess.run(["/usr/bin/systemctl", "--user", "stop", "earl-gateway"])
 
 
 def test_subprocess_run_sudo_systemctl_blocked():
     """``sudo systemctl ...`` defeated the old head==systemctl check."""
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["sudo", "systemctl", "restart", "hermes-gateway"])
+        subprocess.run(["sudo", "systemctl", "restart", "earl-gateway"])
 
 
 def test_subprocess_run_env_systemctl_blocked():
     """``env systemctl ...`` similarly defeated the old head check."""
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["env", "systemctl", "--user", "restart", "hermes-gateway"])
+        subprocess.run(["env", "systemctl", "--user", "restart", "earl-gateway"])
 
 
 def test_subprocess_run_bash_c_systemctl_blocked():
@@ -87,7 +87,7 @@ def test_subprocess_run_sh_c_systemctl_blocked():
 
 def test_subprocess_run_setsid_systemctl_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["setsid", "systemctl", "kill", "hermes-gateway"])
+        subprocess.run(["setsid", "systemctl", "kill", "earl-gateway"])
 
 
 def test_subprocess_run_string_shell_true_blocked():
@@ -100,22 +100,22 @@ def test_subprocess_run_string_shell_true_blocked():
 
 def test_subprocess_popen_systemctl_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.Popen(["systemctl", "--user", "stop", "hermes-gateway"])
+        subprocess.Popen(["systemctl", "--user", "stop", "earl-gateway"])
 
 
 def test_subprocess_call_systemctl_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.call(["systemctl", "--user", "restart", "hermes-gateway"])
+        subprocess.call(["systemctl", "--user", "restart", "earl-gateway"])
 
 
 def test_subprocess_check_call_systemctl_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.check_call(["systemctl", "--user", "restart", "hermes-gateway"])
+        subprocess.check_call(["systemctl", "--user", "restart", "earl-gateway"])
 
 
 def test_subprocess_check_output_systemctl_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.check_output(["systemctl", "--user", "restart", "hermes-gateway"])
+        subprocess.check_output(["systemctl", "--user", "restart", "earl-gateway"])
 
 
 def test_subprocess_getoutput_systemctl_blocked():
@@ -147,7 +147,7 @@ def test_os_popen_systemctl_blocked():
 def test_pty_spawn_systemctl_blocked():
     import pty
     with pytest.raises(RuntimeError, match="live-system guard"):
-        pty.spawn(["systemctl", "--user", "restart", "hermes-gateway"])
+        pty.spawn(["systemctl", "--user", "restart", "earl-gateway"])
 
 
 # ──────────────────── asyncio.create_subprocess_* ──────────────
@@ -158,7 +158,7 @@ def test_asyncio_create_subprocess_exec_systemctl_blocked():
 
     async def _attempt():
         await asyncio.create_subprocess_exec(
-            "systemctl", "--user", "restart", "hermes-gateway"
+            "systemctl", "--user", "restart", "earl-gateway"
         )
 
     with pytest.raises(RuntimeError, match="live-system guard"):
@@ -187,11 +187,11 @@ def test_subprocess_pkill_hermes_blocked():
 
 def test_subprocess_pkill_hermes_gateway_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["pkill", "-f", "hermes-gateway"])
+        subprocess.run(["pkill", "-f", "earl-gateway"])
 
 
 def test_subprocess_pkill_python_dash_f_blocked():
-    """``pkill -f python`` matches the gateway's "python -m hermes_cli.main"."""
+    """``pkill -f python`` matches the gateway's "python -m earl_cli.main"."""
     with pytest.raises(RuntimeError, match="live-system guard"):
         subprocess.run(["pkill", "-f", "python"])
 
@@ -208,7 +208,7 @@ def test_systemctl_status_passes_through():
     """Read-only systemctl probes (status/show/list-units) are fine."""
     # Run with check=False so we don't fail on the gateway's exit code.
     r = subprocess.run(
-        ["systemctl", "--user", "status", "hermes-gateway", "--no-pager"],
+        ["systemctl", "--user", "status", "earl-gateway", "--no-pager"],
         capture_output=True,
         text=True,
         check=False,
@@ -218,7 +218,7 @@ def test_systemctl_status_passes_through():
 
 def test_systemctl_show_passes_through():
     r = subprocess.run(
-        ["systemctl", "--user", "show", "hermes-gateway", "--no-pager"],
+        ["systemctl", "--user", "show", "earl-gateway", "--no-pager"],
         capture_output=True,
         text=True,
         check=False,

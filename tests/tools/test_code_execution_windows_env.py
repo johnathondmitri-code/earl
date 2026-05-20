@@ -12,7 +12,7 @@ the host platform.  We also keep a live Winsock smoke test that only runs
 on a real Windows host.
 
 Also covers the companion Windows bug: the sandbox writes
-``hermes_tools.py`` and ``script.py`` into a temp dir, and those files
+``earl_tools.py`` and ``script.py`` into a temp dir, and those files
 must be written as UTF-8 on every platform — the generated stub contains
 em-dash/en-dash characters in docstrings, and the default ``open(path, "w")``
 on Windows uses the system locale (cp1252 typically), corrupting those
@@ -267,7 +267,7 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
     _SAFE_ENV_PREFIXES = ("PATH", "HOME", "USER", "LANG", "LC_", "TERM",
                           "TMPDIR", "TMP", "TEMP", "SHELL", "LOGNAME",
                           "XDG_", "PYTHONPATH", "VIRTUAL_ENV", "CONDA",
-                          "HERMES_")
+                          "EARL_")
     _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                           "PASSWD", "AUTH")
     out = {}
@@ -311,8 +311,8 @@ class TestPosixEquivalence:
         "PYTHONPATH": "/opt/lib",
         "VIRTUAL_ENV": "/home/alice/.venv",
         "CONDA_PREFIX": "/opt/conda",
-        "HERMES_HOME": "/home/alice/.hermes",
-        "HERMES_INTERACTIVE": "1",
+        "EARL_HOME": "/home/alice/.earl",
+        "EARL_INTERACTIVE": "1",
         # Secret-substring blocks
         "OPENAI_API_KEY": "sk-xxx",
         "GITHUB_TOKEN": "ghp_xxx",
@@ -415,7 +415,7 @@ class TestPosixEquivalence:
 # ---------------------------------------------------------------------------
 #
 # The sandbox writes two Python files into a temp dir — the generated
-# ``hermes_tools.py`` stub, and the LLM's ``script.py``.  Both contain
+# ``earl_tools.py`` stub, and the LLM's ``script.py``.  Both contain
 # non-ASCII characters in practice: the stub has em-dashes in docstrings
 # ("``tcp://host:port`` — the parent falls back..."), and user scripts
 # routinely contain non-ASCII strings, comments, or Unicode identifiers.
@@ -439,7 +439,7 @@ class TestSandboxWritesUtf8:
     context — but the code inspection is deterministic and fast."""
 
     def test_stub_and_script_writes_specify_utf8(self):
-        """Both ``hermes_tools.py`` and ``script.py`` writes in
+        """Both ``earl_tools.py`` and ``script.py`` writes in
         ``_execute_local`` must pass ``encoding="utf-8"``."""
         import tools.code_execution_tool as cet
         src = open(cet.__file__, encoding="utf-8").read()

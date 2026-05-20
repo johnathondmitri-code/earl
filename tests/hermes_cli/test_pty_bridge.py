@@ -1,4 +1,4 @@
-"""Unit tests for hermes_cli.pty_bridge — PTY spawning + byte forwarding.
+"""Unit tests for earl_cli.pty_bridge — PTY spawning + byte forwarding.
 
 These tests drive the bridge with minimal POSIX processes (echo, env, sleep,
 printf) to verify it behaves like a PTY you can read/write/resize/close.
@@ -14,7 +14,7 @@ import pytest
 
 pytest.importorskip("ptyprocess", reason="ptyprocess not installed")
 
-from hermes_cli.pty_bridge import PtyBridge, PtyUnavailableError
+from earl_cli.pty_bridge import PtyBridge, PtyUnavailableError
 
 
 skip_on_windows = pytest.mark.skipif(
@@ -160,8 +160,8 @@ class TestPtyBridgeEnv:
 
     def test_env_is_forwarded(self):
         bridge = PtyBridge.spawn(
-            ["/bin/sh", "-c", "printf %s \"$HERMES_PTY_TEST\""],
-            env={**os.environ, "HERMES_PTY_TEST": "pty-env-works"},
+            ["/bin/sh", "-c", "printf %s \"$EARL_PTY_TEST\""],
+            env={**os.environ, "EARL_PTY_TEST": "pty-env-works"},
         )
         try:
             output = _read_until(bridge, b"pty-env-works")

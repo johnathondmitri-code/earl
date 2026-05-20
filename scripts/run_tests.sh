@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Canonical test runner for hermes-agent. Run this instead of calling
+# Canonical test runner for earl. Run this instead of calling
 # `pytest` directly to guarantee your local run matches CI behavior.
 #
 # What this script enforces:
@@ -27,7 +27,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Prefer a .venv in the current tree, fall back to the main checkout's venv
 # (useful for worktrees where we don't always duplicate the venv).
 VENV=""
-for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.hermes/hermes-agent/venv"; do
+for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.earl/earl/venv"; do
   if [ -f "$candidate/bin/activate" ]; then
     VENV="$candidate"
     break
@@ -70,16 +70,16 @@ while IFS='=' read -r name _; do
   esac
 done < <(env)
 
-# Unset HERMES_* behavioral vars too.
-unset HERMES_YOLO_MODE HERMES_INTERACTIVE HERMES_QUIET HERMES_TOOL_PROGRESS \
-      HERMES_TOOL_PROGRESS_MODE HERMES_MAX_ITERATIONS HERMES_SESSION_PLATFORM \
-      HERMES_SESSION_CHAT_ID HERMES_SESSION_CHAT_NAME HERMES_SESSION_THREAD_ID \
-      HERMES_SESSION_SOURCE HERMES_SESSION_KEY HERMES_GATEWAY_SESSION \
-      HERMES_CRON_SESSION \
-      HERMES_PLATFORM HERMES_INFERENCE_PROVIDER HERMES_MANAGED HERMES_DEV \
-      HERMES_CONTAINER HERMES_EPHEMERAL_SYSTEM_PROMPT HERMES_TIMEZONE \
-      HERMES_REDACT_SECRETS HERMES_BACKGROUND_NOTIFICATIONS HERMES_EXEC_ASK \
-      HERMES_HOME_MODE 2>/dev/null || true
+# Unset EARL_* behavioral vars too.
+unset EARL_YOLO_MODE EARL_INTERACTIVE EARL_QUIET EARL_TOOL_PROGRESS \
+      EARL_TOOL_PROGRESS_MODE EARL_MAX_ITERATIONS EARL_SESSION_PLATFORM \
+      EARL_SESSION_CHAT_ID EARL_SESSION_CHAT_NAME EARL_SESSION_THREAD_ID \
+      EARL_SESSION_SOURCE EARL_SESSION_KEY EARL_GATEWAY_SESSION \
+      EARL_CRON_SESSION \
+      EARL_PLATFORM EARL_INFERENCE_PROVIDER EARL_MANAGED EARL_DEV \
+      EARL_CONTAINER EARL_EPHEMERAL_SYSTEM_PROMPT EARL_TIMEZONE \
+      EARL_REDACT_SECRETS EARL_BACKGROUND_NOTIFICATIONS EARL_EXEC_ASK \
+      EARL_HOME_MODE 2>/dev/null || true
 
 # Pin deterministic runtime.
 export TZ=UTC
@@ -88,15 +88,15 @@ export LC_ALL=C.UTF-8
 export PYTHONHASHSEED=0
 
 # ── Live-gateway test guard (developer machines) ────────────────────────────
-# If a system-wide hermes pytest_live_guard plugin is installed at
-# $HOME/.hermes/pytest_live_guard.py, force-load it here so every test run
+# If a system-wide earl pytest_live_guard plugin is installed at
+# $HOME/.earl/pytest_live_guard.py, force-load it here so every test run
 # from this script gets the protection regardless of which worktree is
 # checked out (in-tree tests/conftest.py guard may be missing on stale
 # branches). Harmless on CI / fresh machines that don't have the file.
-if [ -f "$HOME/.hermes/pytest_live_guard.py" ]; then
+if [ -f "$HOME/.earl/pytest_live_guard.py" ]; then
   case ":${PYTHONPATH:-}:" in
-    *":$HOME/.hermes:"*) ;;
-    *) export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$HOME/.hermes" ;;
+    *":$HOME/.earl:"*) ;;
+    *) export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$HOME/.earl" ;;
   esac
   if [[ ",${PYTEST_PLUGINS:-}," != *,pytest_live_guard,* ]]; then
     export PYTEST_PLUGINS="${PYTEST_PLUGINS:+$PYTEST_PLUGINS,}pytest_live_guard"
@@ -107,7 +107,7 @@ fi
 # CI uses `-n auto` on ubuntu-latest which gives 4 workers. A 20-core
 # workstation with `-n auto` gets 20 workers and exposes test-ordering
 # flakes that CI will never see. Pin to 4 so local matches CI.
-WORKERS="${HERMES_TEST_WORKERS:-4}"
+WORKERS="${EARL_TEST_WORKERS:-4}"
 
 # ── Run pytest ──────────────────────────────────────────────────────────────
 cd "$REPO_ROOT"

@@ -33,11 +33,11 @@ class TestWriteDenyExactPaths:
         assert _is_write_denied(path) is True
 
     def test_hermes_env(self):
-        # ``.env`` under the active HERMES_HOME (profile-aware, not just
-        # ``~/.hermes``) must be write-denied. The hermetic test conftest
-        # points HERMES_HOME at a tempdir — resolve via get_hermes_home()
+        # ``.env`` under the active EARL_HOME (profile-aware, not just
+        # ``~/.earl``) must be write-denied. The hermetic test conftest
+        # points EARL_HOME at a tempdir — resolve via get_hermes_home()
         # to match the denylist.
-        from hermes_constants import get_hermes_home
+        from earl_constants import get_hermes_home
         path = str(get_hermes_home() / ".env")
         assert _is_write_denied(path) is True
 
@@ -84,5 +84,5 @@ class TestWriteAllowed:
         assert _is_write_denied("/home/user/project/main.py") is False
 
     def test_hermes_config_not_env(self):
-        path = os.path.join(str(Path.home()), ".hermes", "config.yaml")
+        path = os.path.join(str(Path.home()), ".earl", "config.yaml")
         assert _is_write_denied(path) is False

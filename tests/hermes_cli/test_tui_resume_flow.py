@@ -22,7 +22,7 @@ def _args(**overrides):
 
 @pytest.fixture
 def main_mod(monkeypatch):
-    import hermes_cli.main as mod
+    import earl_cli.main as mod
 
     monkeypatch.setattr(mod, "_has_any_provider_configured", lambda: True)
     return mod
@@ -218,12 +218,12 @@ def test_cmd_chat_tui_forwards_chat_flags(monkeypatch, main_mod):
 def test_main_top_level_tui_accepts_toolsets(monkeypatch, main_mod):
     captured = {}
 
-    import hermes_cli.config as config_mod
+    import earl_cli.config as config_mod
 
     monkeypatch.setattr(sys, "argv", ["hermes", "--tui", "--toolsets", "web,terminal"])
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "earl_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
@@ -254,14 +254,14 @@ def test_main_top_level_tui_accepts_toolsets(monkeypatch, main_mod):
 def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
     captured = {}
 
-    import hermes_cli.config as config_mod
+    import earl_cli.config as config_mod
 
     monkeypatch.setattr(
         sys, "argv", ["hermes", "-z", "hello", "--toolsets", "web,terminal"]
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "earl_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
@@ -280,7 +280,7 @@ def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.oneshot",
+        "earl_cli.oneshot",
         types.SimpleNamespace(
             run_oneshot=lambda prompt, **kwargs: captured.update(
                 {"prompt": prompt, **kwargs}
@@ -304,14 +304,14 @@ def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
 def _stub_plugin_discovery(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "earl_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
 
 def test_oneshot_rejects_invalid_only_toolsets(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    from hermes_cli.oneshot import run_oneshot
+    from earl_cli.oneshot import run_oneshot
 
     assert run_oneshot("hello", toolsets="nope") == 2
     err = capsys.readouterr().err
@@ -321,7 +321,7 @@ def test_oneshot_rejects_invalid_only_toolsets(monkeypatch, capsys):
 
 def test_oneshot_filters_invalid_toolsets_before_redirect(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    from hermes_cli.oneshot import _validate_explicit_toolsets
+    from earl_cli.oneshot import _validate_explicit_toolsets
 
     valid, error = _validate_explicit_toolsets("web,nope")
 
@@ -331,7 +331,7 @@ def test_oneshot_filters_invalid_toolsets_before_redirect(monkeypatch, capsys):
 
 
 def test_oneshot_all_toolsets_means_all_not_configured_cli():
-    from hermes_cli.oneshot import _validate_explicit_toolsets
+    from earl_cli.oneshot import _validate_explicit_toolsets
 
     valid, error = _validate_explicit_toolsets("all")
 
@@ -341,7 +341,7 @@ def test_oneshot_all_toolsets_means_all_not_configured_cli():
 
 def test_oneshot_all_toolsets_warns_about_ignored_extra_entries(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    from hermes_cli.oneshot import _validate_explicit_toolsets
+    from earl_cli.oneshot import _validate_explicit_toolsets
 
     valid, error = _validate_explicit_toolsets("all,nope")
 
@@ -353,7 +353,7 @@ def test_oneshot_all_toolsets_warns_about_ignored_extra_entries(monkeypatch, cap
 def test_oneshot_accepts_plugin_toolset_after_discovery(monkeypatch):
     import toolsets
 
-    from hermes_cli.oneshot import _validate_explicit_toolsets
+    from earl_cli.oneshot import _validate_explicit_toolsets
 
     discovered = {"ready": False}
     original_validate = toolsets.validate_toolset
@@ -364,7 +364,7 @@ def test_oneshot_accepts_plugin_toolset_after_discovery(monkeypatch):
     monkeypatch.setattr(toolsets, "validate_toolset", fake_validate)
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "earl_cli.plugins",
         types.SimpleNamespace(
             discover_plugins=lambda: discovered.update({"ready": True})
         ),
@@ -378,9 +378,9 @@ def test_oneshot_accepts_plugin_toolset_after_discovery(monkeypatch):
 
 def test_oneshot_rejects_disabled_mcp_toolset(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    import hermes_cli.config as config_mod
+    import earl_cli.config as config_mod
 
-    from hermes_cli.oneshot import _validate_explicit_toolsets
+    from earl_cli.oneshot import _validate_explicit_toolsets
 
     monkeypatch.setattr(
         config_mod,
@@ -399,9 +399,9 @@ def test_oneshot_rejects_disabled_mcp_toolset(monkeypatch, capsys):
 
 def test_oneshot_distinguishes_disabled_mcp_from_unknown(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    import hermes_cli.config as config_mod
+    import earl_cli.config as config_mod
 
-    from hermes_cli.oneshot import _validate_explicit_toolsets
+    from earl_cli.oneshot import _validate_explicit_toolsets
 
     monkeypatch.setattr(
         config_mod,
@@ -421,7 +421,7 @@ def test_oneshot_distinguishes_disabled_mcp_from_unknown(monkeypatch, capsys):
 
 def test_oneshot_wires_session_db_for_recall(monkeypatch):
     """hermes -z bypasses HermesCLI, but recall still needs SessionDB."""
-    from hermes_cli.oneshot import _run_agent
+    from earl_cli.oneshot import _run_agent
 
     captured = {}
     sentinel_db = object()
@@ -448,22 +448,22 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
         return module
 
     monkeypatch.setitem(sys.modules, "run_agent", mod("run_agent", AIAgent=FakeAgent))
-    monkeypatch.setitem(sys.modules, "hermes_state", mod("hermes_state", SessionDB=FakeSessionDB))
+    monkeypatch.setitem(sys.modules, "earl_state", mod("earl_state", SessionDB=FakeSessionDB))
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.config",
-        mod("hermes_cli.config", load_config=lambda: {"model": {"default": "m"}}),
+        "earl_cli.config",
+        mod("earl_cli.config", load_config=lambda: {"model": {"default": "m"}}),
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.models",
-        mod("hermes_cli.models", detect_provider_for_model=lambda *_args, **_kwargs: None),
+        "earl_cli.models",
+        mod("earl_cli.models", detect_provider_for_model=lambda *_args, **_kwargs: None),
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.runtime_provider",
+        "earl_cli.runtime_provider",
         mod(
-            "hermes_cli.runtime_provider",
+            "earl_cli.runtime_provider",
             resolve_runtime_provider=lambda **_kwargs: {
                 "api_key": "k",
                 "base_url": "u",
@@ -475,8 +475,8 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.tools_config",
-        mod("hermes_cli.tools_config", _get_platform_tools=lambda *_args, **_kwargs: {"session_search"}),
+        "earl_cli.tools_config",
+        mod("earl_cli.tools_config", _get_platform_tools=lambda *_args, **_kwargs: {"session_search"}),
     )
 
     assert _run_agent("recall this") == "ok"
@@ -498,7 +498,7 @@ def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
     def fake_call(argv, cwd=None, env=None):
         nonlocal active_path_during_call
         captured.update({"argv": argv, "cwd": cwd, "env": env})
-        active_path_during_call = Path(env["HERMES_TUI_ACTIVE_SESSION_FILE"])
+        active_path_during_call = Path(env["EARL_TUI_ACTIVE_SESSION_FILE"])
         assert active_path_during_call.exists()
         return 1
 
@@ -510,12 +510,12 @@ def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
         )
 
     env = captured["env"]
-    assert env["HERMES_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_INFERENCE_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_TUI_PROVIDER"] == "nous"
-    assert env["HERMES_INFERENCE_PROVIDER"] == "nous"
-    assert env["HERMES_TUI_TOOLSETS"] == "web,terminal"
-    active_path = Path(env["HERMES_TUI_ACTIVE_SESSION_FILE"])
+    assert env["EARL_MODEL"] == "nous/hermes-test"
+    assert env["EARL_INFERENCE_MODEL"] == "nous/hermes-test"
+    assert env["EARL_TUI_PROVIDER"] == "nous"
+    assert env["EARL_INFERENCE_PROVIDER"] == "nous"
+    assert env["EARL_TUI_TOOLSETS"] == "web,terminal"
+    active_path = Path(env["EARL_TUI_ACTIVE_SESSION_FILE"])
     assert active_path.name.startswith("hermes-tui-active-session-")
     assert active_path.suffix == ".json"
     assert active_path_during_call == active_path
@@ -533,7 +533,7 @@ def test_launch_tui_exit_code_42_relaunches_update(monkeypatch, main_mod):
     )
     monkeypatch.setattr(main_mod.subprocess, "call", lambda *args, **kwargs: 42)
 
-    with patch("hermes_cli.relaunch.relaunch") as mock_relaunch:
+    with patch("earl_cli.relaunch.relaunch") as mock_relaunch:
         with pytest.raises(SystemExit) as exc:
             main_mod._launch_tui()
 
@@ -544,7 +544,7 @@ def test_launch_tui_exit_code_42_relaunches_update(monkeypatch, main_mod):
 def test_launch_tui_drops_stale_resume_env_without_resume_arg(monkeypatch, main_mod):
     captured = {}
 
-    monkeypatch.setenv("HERMES_TUI_RESUME", "stale-missing-session")
+    monkeypatch.setenv("EARL_TUI_RESUME", "stale-missing-session")
     monkeypatch.setattr(
         main_mod,
         "_make_tui_argv",
@@ -559,13 +559,13 @@ def test_launch_tui_drops_stale_resume_env_without_resume_arg(monkeypatch, main_
     with pytest.raises(SystemExit):
         main_mod._launch_tui()
 
-    assert "HERMES_TUI_RESUME" not in captured["env"]
+    assert "EARL_TUI_RESUME" not in captured["env"]
 
 
 def test_launch_tui_sets_resume_env_from_resume_arg(monkeypatch, main_mod):
     captured = {}
 
-    monkeypatch.setenv("HERMES_TUI_RESUME", "stale-missing-session")
+    monkeypatch.setenv("EARL_TUI_RESUME", "stale-missing-session")
     monkeypatch.setattr(
         main_mod,
         "_make_tui_argv",
@@ -580,7 +580,7 @@ def test_launch_tui_sets_resume_env_from_resume_arg(monkeypatch, main_mod):
     with pytest.raises(SystemExit):
         main_mod._launch_tui(resume_session_id="20260518_000000_goodid")
 
-    assert captured["env"]["HERMES_TUI_RESUME"] == "20260518_000000_goodid"
+    assert captured["env"]["EARL_TUI_RESUME"] == "20260518_000000_goodid"
 
 
 def test_make_tui_argv_dev_prebuilds_hermes_ink(monkeypatch, main_mod, tmp_path):
@@ -593,7 +593,7 @@ def test_make_tui_argv_dev_prebuilds_hermes_ink(monkeypatch, main_mod, tmp_path)
 
     monkeypatch.setattr(main_mod, "_ensure_tui_node", lambda: None)
     monkeypatch.setattr(main_mod, "_tui_need_npm_install", lambda _tui_dir: False)
-    monkeypatch.delenv("HERMES_TUI_DIR", raising=False)
+    monkeypatch.delenv("EARL_TUI_DIR", raising=False)
     monkeypatch.setattr(main_mod.shutil, "which", lambda bin_name: f"/usr/bin/{bin_name}")
 
     calls = []
@@ -612,7 +612,7 @@ def test_make_tui_argv_dev_prebuilds_hermes_ink(monkeypatch, main_mod, tmp_path)
 
 
 def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, capsys):
-    import hermes_cli.main as main_mod
+    import earl_cli.main as main_mod
 
     class _FakeDB:
         def get_session(self, session_id):
@@ -633,7 +633,7 @@ def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, ca
             return None
 
     monkeypatch.setitem(
-        sys.modules, "hermes_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
+        sys.modules, "earl_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
     )
 
     main_mod._print_tui_exit_summary("20260409_000001_abc123")
@@ -648,7 +648,7 @@ def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, ca
 def test_print_tui_exit_summary_prefers_actual_active_session_file(
     monkeypatch, capsys, tmp_path
 ):
-    import hermes_cli.main as main_mod
+    import earl_cli.main as main_mod
 
     seen = []
 
@@ -673,7 +673,7 @@ def test_print_tui_exit_summary_prefers_actual_active_session_file(
     active = tmp_path / "active.json"
     active.write_text('{"session_id":"actual_session"}', encoding="utf-8")
     monkeypatch.setitem(
-        sys.modules, "hermes_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
+        sys.modules, "earl_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
     )
 
     main_mod._print_tui_exit_summary("startup_resume", str(active))

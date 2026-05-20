@@ -565,7 +565,7 @@ class TestStaleWorktreePruning:
         cutoff = time.time() - (24 * 3600)
 
         for entry in worktrees_dir.iterdir():
-            if not entry.is_dir() or not entry.name.startswith("hermes-"):
+            if not entry.is_dir() or not entry.name.startswith("earl-"):
                 continue
             try:
                 mtime = entry.stat().st_mtime
@@ -611,7 +611,7 @@ class TestStaleWorktreePruning:
 
         pruned = False
         for entry in worktrees_dir.iterdir():
-            if not entry.is_dir() or not entry.name.startswith("hermes-"):
+            if not entry.is_dir() or not entry.name.startswith("earl-"):
                 continue
             mtime = entry.stat().st_mtime
             if mtime > cutoff:
@@ -660,7 +660,7 @@ class TestStaleWorktreePruning:
         cutoff = time.time() - (24 * 3600)
 
         for entry in worktrees_dir.iterdir():
-            if not entry.is_dir() or not entry.name.startswith("hermes-"):
+            if not entry.is_dir() or not entry.name.startswith("earl-"):
                 continue
             mtime = entry.stat().st_mtime
             if mtime > cutoff:
@@ -702,7 +702,7 @@ class TestStaleWorktreePruning:
         cutoff = time.time() - (24 * 3600)
 
         for entry in worktrees_dir.iterdir():
-            if not entry.is_dir() or not entry.name.startswith("hermes-"):
+            if not entry.is_dir() or not entry.name.startswith("earl-"):
                 continue
             mtime = entry.stat().st_mtime
             if mtime > cutoff:

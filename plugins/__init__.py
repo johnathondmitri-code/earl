@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Earl plugins package

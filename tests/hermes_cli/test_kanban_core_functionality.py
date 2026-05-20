@@ -1,7 +1,7 @@
 """Core-functionality tests for the kanban kernel + CLI additions.
 
-Complements tests/hermes_cli/test_kanban_db.py (schema + CAS atomicity)
-and tests/hermes_cli/test_kanban_cli.py (end-to-end run_slash).  The
+Complements tests/earl_cli/test_kanban_db.py (schema + CAS atomicity)
+and tests/earl_cli/test_kanban_cli.py (end-to-end run_slash).  The
 tests here exercise the pieces added as part of the kanban hardening
 pass: circuit breaker, crash detection, daemon loop, idempotency,
 retention/gc, stats, notify subscriptions, worker log accessor, run_slash
@@ -22,8 +22,8 @@ from typing import Optional
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban import run_slash
+from earl_cli import kanban_db as kb
+from earl_cli.kanban import run_slash
 
 
 # ---------------------------------------------------------------------------
@@ -32,9 +32,9 @@ from hermes_cli.kanban import run_slash
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".earl"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -195,7 +195,7 @@ def test_per_task_max_retries_overrides_dispatcher_limit(kanban_home, all_assign
 
     Three-tier resolution order:
       1. ``task.max_retries`` (set via ``create_task(max_retries=N)`` /
-         ``hermes kanban create --max-retries N``)
+         ``earl kanban create --max-retries N``)
       2. ``failure_limit`` kwarg passed by the caller (gateway threads
          this from ``kanban.failure_limit`` config)
       3. ``DEFAULT_FAILURE_LIMIT``
@@ -932,7 +932,7 @@ def test_max_runtime_terminates_overrun_worker(kanban_home):
         killed.append((pid, sig))
 
     # We bypass _pid_alive by stubbing it so the grace-poll exits fast.
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     original_alive = _kb._pid_alive
     _kb._pid_alive = lambda pid: False  # pretend SIGTERM worked immediately
 
@@ -982,7 +982,7 @@ def test_max_runtime_terminates_overrun_worker(kanban_home):
 
 def test_repeated_timeouts_auto_block_at_default_limit(kanban_home):
     """Two timed_out outcomes on the same task/profile trip the retry guard."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     original_alive = _kb._pid_alive
     _kb._pid_alive = lambda pid: False
 
@@ -1058,7 +1058,7 @@ def test_enforce_max_runtime_integrates_with_dispatch(kanban_home, monkeypatch):
     """enforce_max_runtime + dispatch_once integrate cleanly — a timed-out
     task goes through ``timed_out`` → ``ready`` and dispatch_once can then
     re-spawn it without re-reporting the timeout."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     # Leave _pid_alive=True so the crash detector doesn't steal the task
     # before timeout enforcement runs. After SIGTERM in enforce_max_runtime,
     # pretend the worker died so the grace wait exits fast.
@@ -1222,9 +1222,9 @@ def test_spawned_event_emitted_with_pid(kanban_home, all_assignees_spawnable):
 def test_migration_renames_legacy_event_kinds(tmp_path, monkeypatch):
     """A DB created with the old vocab must have its event rows renamed
     in place on init_db()."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".earl"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Init fresh.
     kb.init_db()
@@ -1262,10 +1262,10 @@ def test_migration_renames_legacy_event_kinds(tmp_path, monkeypatch):
 
 def test_list_profiles_on_disk(tmp_path, monkeypatch):
     """list_profiles_on_disk returns the implicit default profile plus
-    named profiles under ~/.hermes/profiles/ that contain a config.yaml."""
+    named profiles under ~/.earl/profiles/ that contain a config.yaml."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.delenv("HERMES_HOME", raising=False)
-    profiles = tmp_path / ".hermes" / "profiles"
+    monkeypatch.delenv("EARL_HOME", raising=False)
+    profiles = tmp_path / ".earl" / "profiles"
     profiles.mkdir(parents=True)
     for name in ("researcher", "writer"):
         d = profiles / name
@@ -1280,8 +1280,8 @@ def test_list_profiles_on_disk(tmp_path, monkeypatch):
 
 
 def test_list_profiles_on_disk_custom_root(tmp_path, monkeypatch):
-    """list_profiles_on_disk respects a custom HERMES_HOME root."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    """list_profiles_on_disk respects a custom EARL_HOME root."""
+    monkeypatch.setenv("EARL_HOME", str(tmp_path))
     profiles = tmp_path / "profiles"
     profiles.mkdir(parents=True)
     for name in ("researcher", "writer"):
@@ -1297,9 +1297,9 @@ def test_known_assignees_merges_disk_and_board(tmp_path, monkeypatch):
     """known_assignees unions profiles on disk with currently-assigned
     names, and reports per-status counts."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    profiles = tmp_path / ".hermes" / "profiles"
+    profiles = tmp_path / ".earl" / "profiles"
     profiles.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / ".earl"))
 
     for name in ("researcher", "writer"):
         d = profiles / name
@@ -1344,7 +1344,7 @@ def test_cli_assignees_json(kanban_home):
 # ---------------------------------------------------------------------------
 
 def test_parse_duration_accepts_formats():
-    from hermes_cli.kanban import _parse_duration
+    from earl_cli.kanban import _parse_duration
     assert _parse_duration(None) is None
     assert _parse_duration("") is None
     assert _parse_duration("42") == 42
@@ -1356,7 +1356,7 @@ def test_parse_duration_accepts_formats():
 
 
 def test_parse_duration_rejects_garbage():
-    from hermes_cli.kanban import _parse_duration
+    from earl_cli.kanban import _parse_duration
     import pytest as _p
     with _p.raises(ValueError):
         _parse_duration("tenminutes")
@@ -1460,7 +1460,7 @@ def test_run_summary_falls_back_to_result(kanban_home):
 def test_multiple_attempts_preserved_as_runs(kanban_home):
     """Crash / retry / complete flow produces one run per attempt, all
     visible in list_runs in chronological order."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     conn = kb.connect()
     try:
         tid = kb.create_task(conn, title="x", assignee="worker")
@@ -1504,7 +1504,7 @@ def test_multiple_attempts_preserved_as_runs(kanban_home):
 
 def test_stale_run_cannot_complete_new_attempt(kanban_home, monkeypatch):
     """A worker from an earlier attempt cannot close a later retry."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
 
     conn = kb.connect()
     try:
@@ -1545,7 +1545,7 @@ def test_stale_run_cannot_complete_new_attempt(kanban_home, monkeypatch):
 
 def test_stale_run_cannot_block_or_heartbeat_new_attempt(kanban_home, monkeypatch):
     """Stale retry attempts cannot mutate the active run lifecycle."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
 
     conn = kb.connect()
     try:
@@ -1956,14 +1956,14 @@ def test_cli_bulk_complete_with_summary_rejects(kanban_home):
     finally:
         conn.close()
     # Bulk + summary is refused (stderr message, no mutation).
-    # Note: hermes_cli.main doesn't propagate sub-command exit codes
+    # Note: earl_cli.main doesn't propagate sub-command exit codes
     # (args.func(args) discards the return value), so we check the side
     # effects instead.
     from subprocess import run as _run
     import os, sys
     env = os.environ.copy()
     r = _run(
-        [sys.executable, "-m", "hermes_cli.main", "kanban",
+        [sys.executable, "-m", "earl_cli.main", "kanban",
          "complete", a, b, "--summary", "oops"],
         capture_output=True, text=True, env=env,
     )
@@ -2182,20 +2182,20 @@ def test_claim_task_recovers_from_invariant_leak(kanban_home):
 # -------------------------------------------------------------------------
 
 def test_cli_create_on_fresh_home_auto_inits(tmp_path, monkeypatch):
-    """First CLI action on an empty HERMES_HOME must not error with
+    """First CLI action on an empty EARL_HOME must not error with
     'no such table: tasks' — init_db auto-runs now."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".earl"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Sanity: kanban.db does NOT exist yet.
     import subprocess as _sp
     import sys as _sys
     worktree_root = Path(__file__).resolve().parents[2]
-    env = {**os.environ, "HERMES_HOME": str(home),
+    env = {**os.environ, "EARL_HOME": str(home),
            "PYTHONPATH": str(worktree_root)}
     r = _sp.run(
-        [_sys.executable, "-m", "hermes_cli.main", "kanban",
+        [_sys.executable, "-m", "earl_cli.main", "kanban",
          "create", "smoke", "--assignee", "worker", "--json"],
         capture_output=True, text=True, env=env,
     )
@@ -2208,11 +2208,11 @@ def test_cli_create_on_fresh_home_auto_inits(tmp_path, monkeypatch):
 
 
 def test_connect_auto_inits_fresh_db(tmp_path, monkeypatch):
-    """Calling connect() on a fresh HERMES_HOME must create the
+    """Calling connect() on a fresh EARL_HOME must create the
     schema. Previously callers had to remember kb.init_db() first."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".earl"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Flush the module-level cache so this path looks fresh.
     kb._INITIALIZED_PATHS.clear()
@@ -2320,9 +2320,9 @@ def test_migration_backfill_idempotent_under_re_run(tmp_path, monkeypatch):
     """init_db must be safe to re-run repeatedly. Each call should leave
     at most one run row per in-flight task, even if called while a
     dispatcher is simultaneously claiming."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".earl"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("EARL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     # Fresh DB, one task left in 'running' with a claim but no run row.
@@ -2620,7 +2620,7 @@ def test_build_worker_context_caps_prior_attempts(kanban_home):
 
 def test_build_worker_context_renders_author_with_safe_framing(kanban_home):
     """Author rendering wraps the operator-controlled author in code fences
-    + "comment from worker" prefix so a misleading HERMES_PROFILE name
+    + "comment from worker" prefix so a misleading EARL_PROFILE name
     (e.g. "hermes-system", "operator") can't be misread as a system
     directive above the comment body. Defense-in-depth — see #22452."""
     conn = kb.connect()
@@ -2701,7 +2701,7 @@ def test_default_spawn_auto_loads_kanban_worker_skill(kanban_home, monkeypatch):
     hermes subprocess (which would hang trying to call an LLM).
     """
     # Pretend the bundled kanban-worker skill resolves for this isolated
-    # HERMES_HOME — the fixture creates an empty tmpdir without the
+    # EARL_HOME — the fixture creates an empty tmpdir without the
     # devops/kanban-worker tree, and _default_spawn gates the --skills
     # flag on actual resolvability.
     monkeypatch.setattr(kb, "_kanban_worker_skill_available", lambda _h: True)
@@ -2743,8 +2743,8 @@ def test_default_spawn_auto_loads_kanban_worker_skill(kanban_home, monkeypatch):
     # Assignee + task env are still present
     assert "some-profile" in cmd
     env = captured["env"]
-    assert env.get("HERMES_KANBAN_TASK") == tid
-    assert env.get("HERMES_PROFILE") == "some-profile"
+    assert env.get("EARL_KANBAN_TASK") == tid
+    assert env.get("EARL_PROFILE") == "some-profile"
 
 
 def test_default_spawn_raises_terminal_timeout_to_task_runtime(kanban_home, monkeypatch):
@@ -3355,7 +3355,7 @@ def test_config_default_dispatch_in_gateway_is_true():
     """Default config must enable gateway-embedded dispatch out of the box.
     Flipping this default to false is a user-visible behaviour change and
     should require a conscious migration."""
-    from hermes_cli.config import DEFAULT_CONFIG
+    from earl_cli.config import DEFAULT_CONFIG
     kanban = DEFAULT_CONFIG.get("kanban", {})
     assert kanban.get("dispatch_in_gateway") is True, (
         "kanban.dispatch_in_gateway default should be True; got "
@@ -3368,10 +3368,10 @@ def test_config_default_dispatch_in_gateway_is_true():
 
 
 def test_check_dispatcher_presence_silent_when_gateway_running(monkeypatch):
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: 12345)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": True}},
     )
     running, msg = kb_cli._check_dispatcher_presence()
@@ -3381,10 +3381,10 @@ def test_check_dispatcher_presence_silent_when_gateway_running(monkeypatch):
 
 
 def test_check_dispatcher_presence_warns_when_no_gateway(monkeypatch):
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: None)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": True}},
     )
     running, msg = kb_cli._check_dispatcher_presence()
@@ -3394,10 +3394,10 @@ def test_check_dispatcher_presence_warns_when_no_gateway(monkeypatch):
 
 def test_check_dispatcher_presence_warns_when_flag_off(monkeypatch):
     """Gateway is up but dispatch_in_gateway=false -> warning."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: 999)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": False}},
     )
     running, msg = kb_cli._check_dispatcher_presence()
@@ -3407,7 +3407,7 @@ def test_check_dispatcher_presence_warns_when_flag_off(monkeypatch):
 
 def test_check_dispatcher_presence_silent_on_probe_error(monkeypatch):
     """If the probe itself errors, we stay silent."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     def _raise():
         raise RuntimeError("boom")
     monkeypatch.setattr("gateway.status.get_running_pid", _raise)
@@ -3432,10 +3432,10 @@ def _make_create_ns(**overrides):
 
 def test_cli_create_warns_when_no_gateway(kanban_home, monkeypatch, capsys):
     """ready+assigned task + no gateway -> warning on stderr."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: None)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": True}},
     )
     ns = _make_create_ns(title="warn-me", assignee="worker")
@@ -3447,10 +3447,10 @@ def test_cli_create_warns_when_no_gateway(kanban_home, monkeypatch, capsys):
 
 def test_cli_create_silent_when_gateway_up(kanban_home, monkeypatch, capsys):
     """gateway running + dispatch enabled -> no warning."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: 4242)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": True}},
     )
     ns = _make_create_ns(title="silent", assignee="worker")
@@ -3461,10 +3461,10 @@ def test_cli_create_silent_when_gateway_up(kanban_home, monkeypatch, capsys):
 
 def test_cli_create_no_warn_on_triage(kanban_home, monkeypatch, capsys):
     """Triage tasks can't be dispatched -> no warning."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: None)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": True}},
     )
     ns = _make_create_ns(title="triage-task", assignee=None, triage=True)
@@ -3475,10 +3475,10 @@ def test_cli_create_no_warn_on_triage(kanban_home, monkeypatch, capsys):
 
 def test_cli_create_no_warn_unassigned(kanban_home, monkeypatch, capsys):
     """Unassigned tasks can't be dispatched -> no warning."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: None)
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "earl_cli.config.load_config",
         lambda: {"kanban": {"dispatch_in_gateway": True}},
     )
     ns = _make_create_ns(title="nobody", assignee=None)
@@ -3489,7 +3489,7 @@ def test_cli_create_no_warn_unassigned(kanban_home, monkeypatch, capsys):
 
 def test_cli_daemon_without_force_prints_deprecation_exits_2(kanban_home, capsys):
     """`hermes kanban daemon` (no --force) is a deprecation stub."""
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     ns = argparse.Namespace(
         force=False, interval=60.0, max=None, failure_limit=3,
         pidfile=None, verbose=False,
@@ -3505,7 +3505,7 @@ def test_cli_daemon_help_marks_deprecated():
     """The argparse help string on `daemon` mentions deprecation so users
     scanning `--help` see the migration before running the stub."""
     import argparse as _ap
-    from hermes_cli import kanban as kb_cli
+    from earl_cli import kanban as kb_cli
     root = _ap.ArgumentParser()
     subs = root.add_subparsers()
     kb_cli.build_parser(subs)
@@ -3543,7 +3543,7 @@ def test_gateway_dispatcher_watcher_respects_config_flag_off(monkeypatch):
     """dispatch_in_gateway=false -> watcher exits fast, no loop."""
     import asyncio
     from gateway.run import GatewayRunner
-    import hermes_cli.config as _cfg_mod
+    import earl_cli.config as _cfg_mod
 
     runner = object.__new__(GatewayRunner)
     runner._running = True
@@ -3561,10 +3561,10 @@ def test_gateway_dispatcher_watcher_respects_config_flag_off(monkeypatch):
 
 
 def test_gateway_dispatcher_watcher_respects_env_override(monkeypatch):
-    """HERMES_KANBAN_DISPATCH_IN_GATEWAY=0 disables without touching config."""
+    """EARL_KANBAN_DISPATCH_IN_GATEWAY=0 disables without touching config."""
     import asyncio
     from gateway.run import GatewayRunner
-    monkeypatch.setenv("HERMES_KANBAN_DISPATCH_IN_GATEWAY", "0")
+    monkeypatch.setenv("EARL_KANBAN_DISPATCH_IN_GATEWAY", "0")
 
     runner = object.__new__(GatewayRunner)
     runner._running = True
@@ -3582,9 +3582,9 @@ def test_gateway_dispatcher_watcher_env_truthy_uses_config(monkeypatch):
     defers to config.)"""
     import asyncio
     from gateway.run import GatewayRunner
-    import hermes_cli.config as _cfg_mod
+    import earl_cli.config as _cfg_mod
 
-    monkeypatch.setenv("HERMES_KANBAN_DISPATCH_IN_GATEWAY", "yes")
+    monkeypatch.setenv("EARL_KANBAN_DISPATCH_IN_GATEWAY", "yes")
     monkeypatch.setattr(
         _cfg_mod, "load_config",
         lambda: {"kanban": {"dispatch_in_gateway": False}},
@@ -3611,8 +3611,8 @@ def test_gateway_dispatcher_disables_corrupt_board_without_traceback(
     import sqlite3
 
     from gateway.run import GatewayRunner
-    import hermes_cli.config as _cfg_mod
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.config as _cfg_mod
+    import earl_cli.kanban_db as _kb
 
     runner = object.__new__(GatewayRunner)
     runner._running = True
@@ -3940,7 +3940,7 @@ def test_reclaim_task_resets_running_to_ready(kanban_home, monkeypatch):
     import signal
     import time
     import secrets
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     conn = kb.connect()
     try:
         t = kb.create_task(conn, title="stuck", assignee="broken")
@@ -4081,7 +4081,7 @@ def test_reassign_task_with_reclaim_first_switches_profile(kanban_home):
 def test_enforce_max_runtime_increments_consecutive_failures(kanban_home, monkeypatch):
     """A single timeout increments consecutive_failures by 1 (was the
     infinite-respawn gap before unification)."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     state = {"sent_term": False}
     def _alive(pid):
         return not state["sent_term"]
@@ -4134,7 +4134,7 @@ def test_repeated_timeouts_trip_the_circuit_breaker(kanban_home, monkeypatch):
     hit the failure_limit threshold and auto-block the task. This closes
     the Forbidden-Seeds-reported gap where timeout loops never capped.
     """
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     state = {"sent_term": False}
     def _alive(pid):
         return not state["sent_term"]
@@ -4237,7 +4237,7 @@ def test_detect_crashed_workers_protocol_violation_auto_blocks(kanban_home):
     against small local models (gemma4-e2b q4) where the model writes
     the answer as plain text and the CLI exits rc=0 cleanly.
     """
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     conn = kb.connect()
     try:
         tid = kb.create_task(conn, title="quiet", assignee="worker")
@@ -4289,7 +4289,7 @@ def test_detect_crashed_workers_nonzero_exit_uses_default_limit(kanban_home):
     """A worker that exited non-zero (real error / crash) uses the
     normal counter path — one failure doesn't trip the breaker.
     """
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
     conn = kb.connect()
     try:
         tid = kb.create_task(conn, title="crashy", assignee="worker")
@@ -4360,7 +4360,7 @@ def test_reclaim_task_clears_failure_counter(kanban_home):
 
 def test_dispatch_once_integrates_stale_detection(kanban_home, monkeypatch):
     """dispatch_once with stale_timeout_seconds reclaims stale running tasks."""
-    import hermes_cli.kanban_db as _kb
+    import earl_cli.kanban_db as _kb
 
     monkeypatch.setattr(_kb, "_pid_alive", lambda _pid: False)
 

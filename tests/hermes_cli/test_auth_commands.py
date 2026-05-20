@@ -38,12 +38,12 @@ def _clear_provider_env(monkeypatch):
 
 
 def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "openrouter"
@@ -63,7 +63,7 @@ def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
 
 
 def test_auth_add_anthropic_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
@@ -78,7 +78,7 @@ def test_auth_add_anthropic_oauth_persists_pool_entry(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "anthropic"
@@ -98,15 +98,15 @@ def test_auth_add_anthropic_oauth_persists_pool_entry(tmp_path, monkeypatch):
 
 
 def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
-        "hermes_cli.auth._nous_device_code_login",
+        "earl_cli.auth._nous_device_code_login",
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
-            "client_id": "hermes-cli",
+            "client_id": "earl-cli",
             "scope": "inference:invoke inference:mint_agent_key",
             "token_type": "Bearer",
             "access_token": token,
@@ -124,7 +124,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "nous"
@@ -158,7 +158,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
     assert entry["agent_key"] == "ak-test"
     assert entry["portal_base_url"] == "https://portal.example.com"
 
-    # `hermes auth add nous` must also populate providers.nous so the
+    # `earl auth add nous` must also populate providers.nous so the
     # 401-recovery path (resolve_nous_runtime_credentials) can mint a fresh
     # agent_key when the 24h TTL expires. If this mirror is missing, recovery
     # raises "Hermes is not logged into Nous Portal" and the agent dies.
@@ -171,11 +171,11 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
 
 
 def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("minimax@example.com")
     monkeypatch.setattr(
-        "hermes_cli.auth._minimax_oauth_login",
+        "earl_cli.auth._minimax_oauth_login",
         lambda **kwargs: {
             "provider": "minimax-oauth",
             "region": "global",
@@ -193,7 +193,7 @@ def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, m
         },
     )
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "minimax-oauth"
@@ -215,19 +215,19 @@ def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, m
 
 
 def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
-    """`hermes auth add nous --type oauth --label <name>` must preserve the
+    """`earl auth add nous --type oauth --label <name>` must preserve the
     custom label end-to-end — it was silently dropped in the first cut of the
     persist_nous_credentials helper because `--label` wasn't threaded through.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
-        "hermes_cli.auth._nous_device_code_login",
+        "earl_cli.auth._nous_device_code_login",
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
-            "client_id": "hermes-cli",
+            "client_id": "earl-cli",
             "scope": "inference:invoke inference:mint_agent_key",
             "token_type": "Bearer",
             "access_token": token,
@@ -245,7 +245,7 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "nous"
@@ -276,11 +276,11 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
 
 
 def test_auth_add_codex_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("codex@example.com")
     monkeypatch.setattr(
-        "hermes_cli.auth._codex_device_code_login",
+        "earl_cli.auth._codex_device_code_login",
         lambda: {
             "tokens": {
                 "access_token": token,
@@ -291,7 +291,7 @@ def test_auth_add_codex_oauth_persists_pool_entry(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "openai-codex"
@@ -311,7 +311,7 @@ def test_auth_add_codex_oauth_persists_pool_entry(tmp_path, monkeypatch):
 
 
 def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     # Prevent pool auto-seeding from host env vars and file-backed sources
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
@@ -347,7 +347,7 @@ def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     class _Args:
         provider = "anthropic"
@@ -363,7 +363,7 @@ def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
 
 
 def test_auth_remove_accepts_label_target(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
@@ -395,7 +395,7 @@ def test_auth_remove_accepts_label_target(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     class _Args:
         provider = "openai-codex"
@@ -410,7 +410,7 @@ def test_auth_remove_accepts_label_target(tmp_path, monkeypatch):
 
 
 def test_auth_remove_prefers_exact_numeric_label_over_index(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
@@ -450,7 +450,7 @@ def test_auth_remove_prefers_exact_numeric_label_over_index(tmp_path, monkeypatc
         },
     )
 
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     class _Args:
         provider = "openai-codex"
@@ -464,7 +464,7 @@ def test_auth_remove_prefers_exact_numeric_label_over_index(tmp_path, monkeypatc
 
 
 def test_auth_reset_clears_provider_statuses(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(
         tmp_path,
         {
@@ -487,7 +487,7 @@ def test_auth_reset_clears_provider_statuses(tmp_path, monkeypatch, capsys):
         },
     )
 
-    from hermes_cli.auth_commands import auth_reset_command
+    from earl_cli.auth_commands import auth_reset_command
 
     class _Args:
         provider = "anthropic"
@@ -505,7 +505,7 @@ def test_auth_reset_clears_provider_statuses(tmp_path, monkeypatch, capsys):
 
 
 def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(
         tmp_path,
         {
@@ -539,7 +539,7 @@ def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch
         },
     )
 
-    from hermes_cli.auth import clear_provider_auth
+    from earl_cli.auth import clear_provider_auth
 
     assert clear_provider_auth("anthropic") is True
 
@@ -558,7 +558,7 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
     pinned to the Codex provider.
     """
     hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}, "credential_pool": {}})
     (hermes_home / "config.yaml").write_text(
         "model:\n"
@@ -568,7 +568,7 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import logout_command
+    from earl_cli.auth import logout_command
 
     logout_command(SimpleNamespace(provider="openai-codex"))
 
@@ -582,7 +582,7 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
 def test_logout_defaults_to_configured_codex_when_no_active_provider(tmp_path, monkeypatch, capsys):
     """Bare `hermes logout` should target configured Codex if auth has no active provider."""
     hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}, "credential_pool": {}})
     (hermes_home / "config.yaml").write_text(
         "model:\n"
@@ -592,7 +592,7 @@ def test_logout_defaults_to_configured_codex_when_no_active_provider(tmp_path, m
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import logout_command
+    from earl_cli.auth import logout_command
 
     logout_command(SimpleNamespace(provider=None))
 
@@ -605,7 +605,7 @@ def test_logout_defaults_to_configured_codex_when_no_active_provider(tmp_path, m
 def test_logout_clears_stale_active_codex_without_provider_credentials(tmp_path, monkeypatch, capsys):
     """Logout must clear active_provider even when provider credential payloads are gone."""
     hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     _write_auth_store(
         tmp_path,
         {
@@ -623,7 +623,7 @@ def test_logout_clears_stale_active_codex_without_provider_credentials(tmp_path,
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import logout_command
+    from earl_cli.auth import logout_command
 
     logout_command(SimpleNamespace(provider=None))
 
@@ -639,7 +639,7 @@ def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
     """Logout config reset should delegate the YAML write atomically."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     config_path = hermes_home / "config.yaml"
     original = {
         "model": {
@@ -651,7 +651,7 @@ def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
     config_path.write_text(yaml.safe_dump(original, sort_keys=False), encoding="utf-8")
     original_text = config_path.read_text(encoding="utf-8")
 
-    from hermes_cli.auth import _reset_config_provider
+    from earl_cli.auth import _reset_config_provider
 
     def _boom(path, data, **kwargs):
         assert path == config_path
@@ -660,7 +660,7 @@ def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
         assert kwargs["sort_keys"] is False
         raise OSError("simulated atomic write failure")
 
-    with patch("hermes_cli.auth.atomic_yaml_write", side_effect=_boom) as mock_write:
+    with patch("earl_cli.auth.atomic_yaml_write", side_effect=_boom) as mock_write:
         with pytest.raises(OSError, match="simulated atomic write failure"):
             _reset_config_provider()
 
@@ -669,7 +669,7 @@ def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
 
 
 def test_auth_list_does_not_call_mutating_select(monkeypatch, capsys):
-    from hermes_cli.auth_commands import auth_list_command
+    from earl_cli.auth_commands import auth_list_command
 
     class _Entry:
         id = "cred-1"
@@ -691,7 +691,7 @@ def test_auth_list_does_not_call_mutating_select(monkeypatch, capsys):
             raise AssertionError("auth_list_command should not call select()")
 
     monkeypatch.setattr(
-        "hermes_cli.auth_commands.load_pool",
+        "earl_cli.auth_commands.load_pool",
         lambda provider: _Pool() if provider == "openrouter" else type("_EmptyPool", (), {"entries": lambda self: []})(),
     )
 
@@ -706,7 +706,7 @@ def test_auth_list_does_not_call_mutating_select(monkeypatch, capsys):
 
 
 def test_auth_list_shows_exhausted_cooldown(monkeypatch, capsys):
-    from hermes_cli.auth_commands import auth_list_command
+    from earl_cli.auth_commands import auth_list_command
 
     class _Entry:
         id = "cred-1"
@@ -724,8 +724,8 @@ def test_auth_list_shows_exhausted_cooldown(monkeypatch, capsys):
         def peek(self):
             return None
 
-    monkeypatch.setattr("hermes_cli.auth_commands.load_pool", lambda provider: _Pool())
-    monkeypatch.setattr("hermes_cli.auth_commands.time.time", lambda: 1030.0)
+    monkeypatch.setattr("earl_cli.auth_commands.load_pool", lambda provider: _Pool())
+    monkeypatch.setattr("earl_cli.auth_commands.time.time", lambda: 1030.0)
 
     class _Args:
         provider = "openrouter"
@@ -738,7 +738,7 @@ def test_auth_list_shows_exhausted_cooldown(monkeypatch, capsys):
 
 
 def test_auth_list_shows_auth_failure_when_exhausted_entry_is_unauthorized(monkeypatch, capsys):
-    from hermes_cli.auth_commands import auth_list_command
+    from earl_cli.auth_commands import auth_list_command
 
     class _Entry:
         id = "cred-1"
@@ -758,8 +758,8 @@ def test_auth_list_shows_auth_failure_when_exhausted_entry_is_unauthorized(monke
         def peek(self):
             return None
 
-    monkeypatch.setattr("hermes_cli.auth_commands.load_pool", lambda provider: _Pool())
-    monkeypatch.setattr("hermes_cli.auth_commands.time.time", lambda: 1030.0)
+    monkeypatch.setattr("earl_cli.auth_commands.load_pool", lambda provider: _Pool())
+    monkeypatch.setattr("earl_cli.auth_commands.time.time", lambda: 1030.0)
 
     class _Args:
         provider = "openai-codex"
@@ -773,7 +773,7 @@ def test_auth_list_shows_auth_failure_when_exhausted_entry_is_unauthorized(monke
 
 
 def test_auth_list_prefers_explicit_reset_time(monkeypatch, capsys):
-    from hermes_cli.auth_commands import auth_list_command
+    from earl_cli.auth_commands import auth_list_command
 
     class _Entry:
         id = "cred-1"
@@ -794,9 +794,9 @@ def test_auth_list_prefers_explicit_reset_time(monkeypatch, capsys):
         def peek(self):
             return None
 
-    monkeypatch.setattr("hermes_cli.auth_commands.load_pool", lambda provider: _Pool())
+    monkeypatch.setattr("earl_cli.auth_commands.load_pool", lambda provider: _Pool())
     monkeypatch.setattr(
-        "hermes_cli.auth_commands.time.time",
+        "earl_cli.auth_commands.time.time",
         lambda: datetime(2026, 4, 5, 10, 30, tzinfo=timezone.utc).timestamp(),
     )
 
@@ -815,7 +815,7 @@ def test_auth_remove_env_seeded_clears_env_var(tmp_path, monkeypatch):
     so the entry doesn't get re-seeded on the next load_pool() call."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     # Write a .env with an OpenRouter key
     env_path = hermes_home / ".env"
@@ -842,7 +842,7 @@ def test_auth_remove_env_seeded_clears_env_var(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     class _Args:
         provider = "openrouter"
@@ -865,7 +865,7 @@ def test_auth_remove_env_seeded_does_not_resurrect(tmp_path, monkeypatch):
     """After removing an env-seeded credential, load_pool should NOT re-create it."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     # Write .env with an OpenRouter key
     env_path = hermes_home / ".env"
@@ -891,7 +891,7 @@ def test_auth_remove_env_seeded_does_not_resurrect(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     class _Args:
         provider = "openrouter"
@@ -909,7 +909,7 @@ def test_auth_remove_manual_entry_does_not_touch_env(tmp_path, monkeypatch):
     """Removing a manually-added credential should NOT touch .env."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
     env_path = hermes_home / ".env"
@@ -934,7 +934,7 @@ def test_auth_remove_manual_entry_does_not_touch_env(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     class _Args:
         provider = "openrouter"
@@ -948,7 +948,7 @@ def test_auth_remove_manual_entry_does_not_touch_env(tmp_path, monkeypatch):
 
 def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
     """Removing a claude_code credential must prevent it from being re-seeded."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
@@ -975,7 +975,7 @@ def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
     (hermes_home / "auth.json").write_text(json.dumps(auth_store))
 
     from types import SimpleNamespace
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
     auth_remove_command(SimpleNamespace(provider="anthropic", target="1"))
 
     updated = json.loads((hermes_home / "auth.json").read_text())
@@ -986,10 +986,10 @@ def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
 
 def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
     """unsuppress_credential_source() removes a previously-set marker."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1})
 
-    from hermes_cli.auth import suppress_credential_source, unsuppress_credential_source, is_source_suppressed
+    from earl_cli.auth import suppress_credential_source, unsuppress_credential_source, is_source_suppressed
 
     suppress_credential_source("openai-codex", "device_code")
     assert is_source_suppressed("openai-codex", "device_code") is True
@@ -1005,10 +1005,10 @@ def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
 
 def test_unsuppress_credential_source_returns_false_when_absent(tmp_path, monkeypatch):
     """unsuppress_credential_source() returns False if no marker exists."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1})
 
-    from hermes_cli.auth import unsuppress_credential_source
+    from earl_cli.auth import unsuppress_credential_source
 
     assert unsuppress_credential_source("openai-codex", "device_code") is False
     assert unsuppress_credential_source("nonexistent", "whatever") is False
@@ -1016,10 +1016,10 @@ def test_unsuppress_credential_source_returns_false_when_absent(tmp_path, monkey
 
 def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypatch):
     """Clearing one marker must not affect unrelated markers."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1})
 
-    from hermes_cli.auth import (
+    from earl_cli.auth import (
         suppress_credential_source,
         unsuppress_credential_source,
         is_source_suppressed,
@@ -1034,7 +1034,7 @@ def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypa
 
 def test_auth_remove_codex_device_code_suppresses_reseed(tmp_path, monkeypatch):
     """Removing an auto-seeded openai-codex credential must mark the source as suppressed."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, {"device_code"}),
@@ -1067,7 +1067,7 @@ def test_auth_remove_codex_device_code_suppresses_reseed(tmp_path, monkeypatch):
     (hermes_home / "auth.json").write_text(json.dumps(auth_store))
 
     from types import SimpleNamespace
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="openai-codex", target="1"))
 
@@ -1081,7 +1081,7 @@ def test_auth_remove_codex_device_code_suppresses_reseed(tmp_path, monkeypatch):
 
 def test_auth_remove_codex_manual_source_suppresses_reseed(tmp_path, monkeypatch):
     """Removing a manually-added (`manual:device_code`) openai-codex credential must also suppress."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
@@ -1114,7 +1114,7 @@ def test_auth_remove_codex_manual_source_suppresses_reseed(tmp_path, monkeypatch
     (hermes_home / "auth.json").write_text(json.dumps(auth_store))
 
     from types import SimpleNamespace
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="openai-codex", target="1"))
 
@@ -1127,8 +1127,8 @@ def test_auth_remove_codex_manual_source_suppresses_reseed(tmp_path, monkeypatch
 
 
 def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
-    """Re-linking codex via `hermes auth add openai-codex` must clear any suppression marker."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    """Re-linking codex via `earl auth add openai-codex` must clear any suppression marker."""
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
@@ -1136,7 +1136,7 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
 
-    # Pre-existing suppression (simulating a prior `hermes auth remove`)
+    # Pre-existing suppression (simulating a prior `earl auth remove`)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
@@ -1145,7 +1145,7 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
 
     token = _jwt_with_email("codex@example.com")
     monkeypatch.setattr(
-        "hermes_cli.auth._codex_device_code_login",
+        "earl_cli.auth._codex_device_code_login",
         lambda: {
             "tokens": {
                 "access_token": token,
@@ -1156,7 +1156,7 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
         },
     )
 
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "openai-codex"
@@ -1176,7 +1176,7 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
 
 def test_seed_from_singletons_respects_codex_suppression(tmp_path, monkeypatch):
     """_seed_from_singletons() for openai-codex must skip auto-import when suppressed."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("EARL_HOME", str(tmp_path / "hermes"))
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
 
@@ -1195,7 +1195,7 @@ def test_seed_from_singletons_respects_codex_suppression(tmp_path, monkeypatch):
             "refresh_token": "would-be-reimported",
         }
 
-    monkeypatch.setattr("hermes_cli.auth._import_codex_cli_tokens", _fake_import)
+    monkeypatch.setattr("earl_cli.auth._import_codex_cli_tokens", _fake_import)
 
     from agent.credential_pool import _seed_from_singletons
 
@@ -1213,14 +1213,14 @@ def test_seed_from_singletons_respects_codex_suppression(tmp_path, monkeypatch):
 
 
 def test_auth_remove_env_seeded_suppresses_shell_exported_var(tmp_path, monkeypatch, capsys):
-    """`hermes auth remove xai 1` must stick even when the env var is exported
-    by the shell (not written into ~/.hermes/.env).  Before PR for #13371 the
+    """`earl auth remove xai 1` must stick even when the env var is exported
+    by the shell (not written into ~/.earl/.env).  Before PR for #13371 the
     removal silently restored on next load_pool() because _seed_from_env()
     re-read os.environ.  Now env:<VAR> is suppressed in auth.json.
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     # Simulate shell export (NOT written to .env)
     monkeypatch.setenv("XAI_API_KEY", "sk-xai-shell-export")
@@ -1245,7 +1245,7 @@ def test_auth_remove_env_seeded_suppresses_shell_exported_var(tmp_path, monkeypa
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
     auth_remove_command(SimpleNamespace(provider="xai", target="1"))
 
     # Suppression marker written
@@ -1265,13 +1265,13 @@ def test_auth_remove_env_seeded_suppresses_shell_exported_var(tmp_path, monkeypa
 
 
 def test_auth_remove_env_seeded_dotenv_only_no_shell_hint(tmp_path, monkeypatch, capsys):
-    """When the env var lives only in ~/.hermes/.env (not the shell), the
+    """When the env var lives only in ~/.earl/.env (not the shell), the
     shell-hint should NOT be printed — avoid scaring the user about a
     non-existent shell export.
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     # Key ONLY in .env, shell must not have it
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -1297,7 +1297,7 @@ def test_auth_remove_env_seeded_dotenv_only_no_shell_hint(tmp_path, monkeypatch,
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth_commands import auth_remove_command
     auth_remove_command(SimpleNamespace(provider="deepseek", target="1"))
 
     out = capsys.readouterr().out
@@ -1307,13 +1307,13 @@ def test_auth_remove_env_seeded_dotenv_only_no_shell_hint(tmp_path, monkeypatch,
 
 
 def test_auth_add_clears_env_suppression_for_provider(tmp_path, monkeypatch):
-    """Re-adding a credential via `hermes auth add <provider>` clears any
+    """Re-adding a credential via `earl auth add <provider>` clears any
     env:<VAR> suppression marker — strong signal the user wants auth back.
     Matches the Codex device_code re-link behaviour.
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     monkeypatch.delenv("XAI_API_KEY", raising=False)
 
     _write_auth_store(
@@ -1326,8 +1326,8 @@ def test_auth_add_clears_env_suppression_for_provider(tmp_path, monkeypatch):
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import is_source_suppressed
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth import is_source_suppressed
+    from earl_cli.auth_commands import auth_add_command
 
     assert is_source_suppressed("xai", "env:XAI_API_KEY") is True
     auth_add_command(SimpleNamespace(
@@ -1339,12 +1339,12 @@ def test_auth_add_clears_env_suppression_for_provider(tmp_path, monkeypatch):
 
 def test_seed_from_env_respects_env_suppression(tmp_path, monkeypatch):
     """_seed_from_env() must skip env:<VAR> sources that the user suppressed
-    via `hermes auth remove`.  This is the gate that prevents shell-exported
+    via `earl auth remove`.  This is the gate that prevents shell-exported
     keys from resurrecting removed credentials.
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     monkeypatch.setenv("XAI_API_KEY", "sk-xai-shell-export")
 
     (hermes_home / "auth.json").write_text(json.dumps({
@@ -1368,7 +1368,7 @@ def test_seed_from_env_respects_openrouter_suppression(tmp_path, monkeypatch):
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-shell-export")
 
     (hermes_home / "auth.json").write_text(json.dumps({
@@ -1398,7 +1398,7 @@ def test_seed_from_singletons_respects_nous_suppression(tmp_path, monkeypatch):
     """nous device_code must not re-seed from auth.json when suppressed."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1,
@@ -1418,7 +1418,7 @@ def test_seed_from_singletons_respects_copilot_suppression(tmp_path, monkeypatch
     """copilot gh_cli must not re-seed when suppressed."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1,
@@ -1427,7 +1427,7 @@ def test_seed_from_singletons_respects_copilot_suppression(tmp_path, monkeypatch
     }))
 
     # Stub resolve_copilot_token to return a live token
-    import hermes_cli.copilot_auth as ca
+    import earl_cli.copilot_auth as ca
     monkeypatch.setattr(ca, "resolve_copilot_token", lambda: ("ghp_fake", "gh auth token"))
 
     from agent.credential_pool import _seed_from_singletons
@@ -1442,7 +1442,7 @@ def test_seed_from_singletons_respects_qwen_suppression(tmp_path, monkeypatch):
     """qwen-oauth qwen-cli must not re-seed from ~/.qwen/oauth_creds.json when suppressed."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1,
@@ -1450,7 +1450,7 @@ def test_seed_from_singletons_respects_qwen_suppression(tmp_path, monkeypatch):
         "suppressed_sources": {"qwen-oauth": ["qwen-cli"]},
     }))
 
-    import hermes_cli.auth as ha
+    import earl_cli.auth as ha
     monkeypatch.setattr(ha, "resolve_qwen_runtime_credentials", lambda **kw: {
         "api_key": "tok", "source": "qwen-cli", "base_url": "https://q",
     })
@@ -1464,10 +1464,10 @@ def test_seed_from_singletons_respects_qwen_suppression(tmp_path, monkeypatch):
 
 
 def test_seed_from_singletons_respects_hermes_pkce_suppression(tmp_path, monkeypatch):
-    """anthropic hermes_pkce must not re-seed from ~/.hermes/.anthropic_oauth.json when suppressed."""
+    """anthropic hermes_pkce must not re-seed from ~/.earl/.anthropic_oauth.json when suppressed."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     import yaml
     (hermes_home / "config.yaml").write_text(yaml.dump({"model": {"provider": "anthropic", "model": "claude"}}))
@@ -1496,7 +1496,7 @@ def test_seed_custom_pool_respects_config_suppression(tmp_path, monkeypatch):
     """Custom provider config:<name> source must not re-seed when suppressed."""
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     import yaml
     (hermes_home / "config.yaml").write_text(yaml.dump({
@@ -1546,7 +1546,7 @@ def test_credential_sources_registry_has_expected_steps():
         "gh auth token / COPILOT_GITHUB_TOKEN / GH_TOKEN",
         "Any env-seeded credential (XAI_API_KEY, DEEPSEEK_API_KEY, etc.)",
         "~/.claude/.credentials.json",
-        "~/.hermes/.anthropic_oauth.json",
+        "~/.earl/.anthropic_oauth.json",
         "auth.json providers.nous",
         "auth.json providers.openai-codex + ~/.codex/auth.json",
         "auth.json providers.minimax-oauth",
@@ -1588,7 +1588,7 @@ def test_auth_remove_copilot_suppresses_all_variants(tmp_path, monkeypatch):
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     _write_auth_store(
         tmp_path,
@@ -1608,8 +1608,8 @@ def test_auth_remove_copilot_suppresses_all_variants(tmp_path, monkeypatch):
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import is_source_suppressed
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth import is_source_suppressed
+    from earl_cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="copilot", target="1"))
 
@@ -1620,13 +1620,13 @@ def test_auth_remove_copilot_suppresses_all_variants(tmp_path, monkeypatch):
 
 
 def test_auth_add_clears_all_suppressions_including_non_env(tmp_path, monkeypatch):
-    """Re-adding a credential via `hermes auth add <provider>` clears ALL
+    """Re-adding a credential via `earl auth add <provider>` clears ALL
     suppression markers for the provider, not just env:*.  This matches
     the single "re-engage" semantic — the user wants auth back, period.
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     _write_auth_store(
         tmp_path,
@@ -1640,8 +1640,8 @@ def test_auth_add_clears_all_suppressions_including_non_env(tmp_path, monkeypatc
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import is_source_suppressed
-    from hermes_cli.auth_commands import auth_add_command
+    from earl_cli.auth import is_source_suppressed
+    from earl_cli.auth_commands import auth_add_command
 
     auth_add_command(SimpleNamespace(
         provider="copilot", auth_type="api_key",
@@ -1654,13 +1654,13 @@ def test_auth_add_clears_all_suppressions_including_non_env(tmp_path, monkeypatc
 
 
 def test_auth_remove_codex_manual_device_code_suppresses_canonical(tmp_path, monkeypatch):
-    """Removing a manual:device_code entry (from `hermes auth add openai-codex`)
+    """Removing a manual:device_code entry (from `earl auth add openai-codex`)
     must suppress the canonical ``device_code`` key, not ``manual:device_code``.
     The re-seed gate in _seed_from_singletons checks ``device_code``.
     """
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("EARL_HOME", str(hermes_home))
 
     _write_auth_store(
         tmp_path,
@@ -1681,8 +1681,8 @@ def test_auth_remove_codex_manual_device_code_suppresses_canonical(tmp_path, mon
     )
 
     from types import SimpleNamespace
-    from hermes_cli.auth import is_source_suppressed
-    from hermes_cli.auth_commands import auth_remove_command
+    from earl_cli.auth import is_source_suppressed
+    from earl_cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="openai-codex", target="1"))
     assert is_source_suppressed("openai-codex", "device_code")

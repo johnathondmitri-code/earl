@@ -103,7 +103,7 @@ class TestHermesToolsGeneration(unittest.TestCase):
 
     def test_rpc_infrastructure_present(self):
         src = generate_hermes_tools_module(["terminal"])
-        self.assertIn("HERMES_RPC_SOCKET", src)
+        self.assertIn("EARL_RPC_SOCKET", src)
         self.assertIn("AF_UNIX", src)
         self.assertIn("def _connect(", src)
         self.assertIn("def _call(", src)
@@ -120,7 +120,7 @@ class TestHermesToolsGeneration(unittest.TestCase):
         src = generate_hermes_tools_module(["terminal"], transport="file")
         self.assertIn("import json, os, shlex, tempfile, threading, time", src)
         self.assertIn("os.path.join(tempfile.gettempdir(), \"hermes_rpc\")", src)
-        self.assertNotIn('os.environ.get("HERMES_RPC_DIR", "/tmp/hermes_rpc")', src)
+        self.assertNotIn('os.environ.get("EARL_RPC_DIR", "/tmp/hermes_rpc")', src)
 
     def test_uds_transport_serializes_concurrent_calls(self):
         """Regression: UDS _call() must hold a lock across send+recv so that
@@ -170,7 +170,7 @@ class TestExecuteCodeRemoteTempDir(unittest.TestCase):
         run_cmd = next(cmd for cmd, _, _ in env.commands if "python3 script.py" in cmd)
         cleanup_cmd = env.commands[-1][0]
         self.assertIn("mkdir -p /data/data/com.termux/files/usr/tmp/hermes_exec_", mkdir_cmd)
-        self.assertIn("HERMES_RPC_DIR=/data/data/com.termux/files/usr/tmp/hermes_exec_", run_cmd)
+        self.assertIn("EARL_RPC_DIR=/data/data/com.termux/files/usr/tmp/hermes_exec_", run_cmd)
         self.assertIn("rm -rf /data/data/com.termux/files/usr/tmp/hermes_exec_", cleanup_cmd)
         self.assertNotIn("mkdir -p /tmp/hermes_exec_", mkdir_cmd)
 
@@ -202,9 +202,9 @@ class TestExecuteCode(unittest.TestCase):
 
     def test_repo_root_modules_are_importable(self):
         """Sandboxed scripts can import modules that live at the repo root."""
-        result = self._run('import hermes_constants; print(hermes_constants.__file__)')
+        result = self._run('import earl_constants; print(earl_constants.__file__)')
         self.assertEqual(result["status"], "success")
-        self.assertIn("hermes_constants.py", result["output"])
+        self.assertIn("earl_constants.py", result["output"])
 
     def test_single_tool_call(self):
         """Script calls terminal and prints the result."""
@@ -739,7 +739,7 @@ class TestEnvVarFiltering(unittest.TestCase):
 
     def test_hermes_rpc_socket_injected(self):
         child_env = self._get_child_env()
-        self.assertIn("HERMES_RPC_SOCKET", child_env)
+        self.assertIn("EARL_RPC_SOCKET", child_env)
 
     def test_pythondontwritebytecode_set(self):
         child_env = self._get_child_env()
@@ -748,7 +748,7 @@ class TestEnvVarFiltering(unittest.TestCase):
     def test_timezone_injected_when_set(self):
         env_backup = os.environ.copy()
         try:
-            os.environ["HERMES_TIMEZONE"] = "America/New_York"
+            os.environ["EARL_TIMEZONE"] = "America/New_York"
             child_env = self._get_child_env()
             self.assertEqual(child_env.get("TZ"), "America/New_York")
         finally:
@@ -758,7 +758,7 @@ class TestEnvVarFiltering(unittest.TestCase):
     def test_timezone_not_set_when_empty(self):
         env_backup = os.environ.copy()
         try:
-            os.environ.pop("HERMES_TIMEZONE", None)
+            os.environ.pop("EARL_TIMEZONE", None)
             child_env = self._get_child_env()
             if "TZ" in child_env:
                 self.assertNotEqual(child_env["TZ"], "")
@@ -850,7 +850,7 @@ class TestLoadConfig(unittest.TestCase):
 
     def test_returns_code_execution_section(self):
         from tools.code_execution_tool import _load_config
-        with patch("hermes_cli.config.read_raw_config",
+        with patch("earl_cli.config.read_raw_config",
                    return_value={"code_execution": {"timeout": 120, "max_tool_calls": 10}}):
             result = _load_config()
         self.assertEqual(result, {"timeout": 120, "max_tool_calls": 10})
@@ -860,7 +860,7 @@ class TestLoadConfig(unittest.TestCase):
         mock_cli = MagicMock()
         mock_cli.CLI_CONFIG = {"code_execution": {"timeout": 999}}
         with patch.dict("sys.modules", {"cli": mock_cli}), \
-             patch("hermes_cli.config.read_raw_config", return_value={}):
+             patch("earl_cli.config.read_raw_config", return_value={}):
             result = _load_config()
         self.assertEqual(result, {})
 

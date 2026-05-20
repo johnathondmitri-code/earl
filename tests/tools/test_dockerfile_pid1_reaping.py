@@ -107,7 +107,7 @@ def test_dockerfile_entrypoint_routes_through_the_init(dockerfile_text):
 
 def test_dockerfile_installs_tui_dependencies(dockerfile_text):
     # The TUI workspace manifests must be present so ``npm install`` can
-    # resolve dependencies. The bundled ``hermes-ink`` workspace package is
+    # resolve dependencies. The bundled ``earl-ink`` workspace package is
     # now COPIED into the image as a whole tree (not just its lockfile)
     # because it's referenced as a ``file:`` workspace dependency from
     # ``ui-tui/package.json`` — copying the tree avoids npm stopping at a
@@ -143,12 +143,12 @@ def test_dockerfile_builds_tui_assets(dockerfile_text):
 
 
 def test_dockerfile_materializes_local_tui_ink_package(dockerfile_text):
-    # ``hermes-ink`` is a bundled workspace package referenced from
+    # ``earl-ink`` is a bundled workspace package referenced from
     # ``ui-tui/package.json`` via ``file:`` — not pulled from the npm
     # registry. The contract this test pins is just that the image
     # actually carries the package source so ``await import('@hermes/ink')``
     # can resolve at runtime; the previous, much pickier assertion (manual
-    # ``rm -rf`` + ``npm install --omit=dev --prefix node_modules/@hermes/ink``)
+    # ``rm -rf`` + ``npm install --omit=dev --prefix node_modules/.earl/ink``)
     # baked in implementation details of an older materialisation flow that
     # was simplified once npm workspaces handled the resolution natively.
     assert "ui-tui/packages/hermes-ink/" in dockerfile_text, (
