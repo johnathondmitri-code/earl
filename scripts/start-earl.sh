@@ -65,10 +65,17 @@ if [ -n "${EARL_PERSONA_OVERLAY:-}" ]; then
   printf '%s' "$EARL_PERSONA_OVERLAY" > "$EARL_REPO_DIR/docker/SOUL.md"
 fi
 
-# 4. Verify Earl import works (template-build verified this too, but cheap to recheck)
-echo "==> Verifying Earl import"
+# 4. Verify the full Earl Agent surface imports + the workspace config loads.
+#    The template build already verified imports, but the boot-time pull may
+#    have introduced a regression — this catches it before the gateway tries
+#    to start and dies silently.
+echo "==> Verifying Earl import + workspace config"
 cd "$EARL_REPO_DIR"
-/home/user/earl/venv/bin/python -c "import earl_workspace; cfg = earl_workspace.get_workspace(); print(f'OK — workspace={cfg.workspace_id} company={cfg.company_name}')"
+/home/user/earl/venv/bin/python -c "
+import earl_workspace, gateway, gateway.run, gateway.platforms.telegram
+import agent, tools, providers, plugins, cron
+cfg = earl_workspace.get_workspace()
+print(f'OK — workspace={cfg.workspace_id} company={cfg.company_name}')"
 
 # 5. Bridge env vars to vendor-native names
 export TELEGRAM_BOT_TOKEN="$EARL_TELEGRAM_BOT_TOKEN"

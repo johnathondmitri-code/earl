@@ -65,8 +65,25 @@ ENV VIRTUAL_ENV="/home/user/earl/venv"
 ENV PATH="/home/user/earl/venv/bin:/home/user/.local/bin:${PATH}"
 
 # ----------------------------------------------------------------------------
-# 6. Verify the install succeeded at build time (catches broken imports early)
+# 6. Verify the install succeeded at build time (catches broken imports early
+#    and proves the whole agent surface — not just a few modules — boots in
+#    the template's venv).
 # ----------------------------------------------------------------------------
-RUN /home/user/earl/venv/bin/python -c "import earl_workspace, gateway, agent, tools; print('Earl Agent imports OK')"
+RUN /home/user/earl/venv/bin/python -c "\
+import earl_workspace; \
+import gateway; import gateway.run; import gateway.platforms.telegram; \
+import agent; \
+import tools; \
+import providers; \
+import plugins; \
+import cron; \
+print('Earl Agent surface imports OK')"
+
+# ----------------------------------------------------------------------------
+# 7. Verify the gateway launcher exists in the repo (catches the case where
+#    scripts/start-earl.sh was removed but the template was rebuilt anyway).
+# ----------------------------------------------------------------------------
+RUN test -f /home/user/earl/repo/scripts/start-earl.sh && \
+    echo "start-earl.sh present"
 
 WORKDIR /home/user/earl/repo

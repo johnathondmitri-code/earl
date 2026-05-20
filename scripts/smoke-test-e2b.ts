@@ -145,13 +145,24 @@ async function main() {
 
     console.log(`[2/3] Running ${USE_TEMPLATE ? "start-earl.sh (fast)" : "sandbox-install.sh (slow)"}…`);
 
+    // Pull latest code before running — template may lag main. Catches the
+    // chicken-and-egg case where start-earl.sh isn't in the templated repo
+    // because the template was built before we added it.
     const start = await sandbox.commands.run(
       `set -e
 ${envExports}
+if [ -d "$EARL_REPO_DIR/.git" ]; then
+  ( cd "$EARL_REPO_DIR" && git pull --rebase --autostash --quiet 2>&1 ) || echo "git pull skipped/failed"
+fi
+if [ ! -f "${scriptToRun}" ]; then
+  echo "ERROR: script not found at ${scriptToRun}" >&2
+  ls "$EARL_REPO_DIR/scripts/" >&2
+  exit 4
+fi
 chmod +x ${scriptToRun}
 bash ${scriptToRun} 2>&1
 echo "EXIT_CODE=$?"`,
-      { timeoutMs: USE_TEMPLATE ? 60_000 : 600_000 },
+      { timeoutMs: USE_TEMPLATE ? 90_000 : 600_000 },
     );
 
     console.log("      ----- output (last 30 lines) -----");
