@@ -4611,6 +4611,33 @@ class TelegramAdapter(BasePlatformAdapter):
 
         event = self._build_message_event(msg, MessageType.TEXT, update_id=update.update_id)
         event.text = self._clean_bot_trigger_text(event.text)
+
+        # Earl SaaS callback — emit inbound_message so the dashboard sees the
+        # message in /conversations. Best effort; never blocks ingestion.
+        try:
+            from earl_saas_callback import emit_inbound_message
+            _user = msg.from_user
+            emit_inbound_message(
+                channel="telegram",
+                external_chat_id=msg.chat_id,
+                external_message_id=msg.message_id,
+                sender_external_id=getattr(_user, "id", None) if _user else None,
+                sender_handle=getattr(_user, "username", None) if _user else None,
+                sender_name=(
+                    " ".join(
+                        s for s in [
+                            getattr(_user, "first_name", None) if _user else None,
+                            getattr(_user, "last_name", None) if _user else None,
+                        ] if s
+                    ) or None
+                ),
+                text=event.text,
+                sender_type="owner",  # v1: DM = workspace owner. Refine for groups later.
+            )
+        except Exception as _cb_err:
+            import logging as _logging
+            _logging.getLogger(__name__).debug("[saas_callback] inbound emit failed: %s", _cb_err)
+
         self._enqueue_text_event(event)
 
     async def _handle_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -26,6 +26,24 @@ from typing import Callable, Dict, List, Optional, Set
 logger = logging.getLogger(__name__)
 
 
+def _summarize_tool_io(value, max_chars: int = 800):
+    """Trim/JSON-serialize tool input or output to a small previewable size
+    for the SaaS audit log. Big tool results (e.g. browser HTML, large lists)
+    would otherwise inflate audit_log row sizes and clog the dashboard.
+    """
+    try:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value[:max_chars] + ("…" if len(value) > max_chars else "")
+        s = json.dumps(value, default=str)
+        if len(s) <= max_chars:
+            return json.loads(s)
+        return s[:max_chars] + "…"
+    except Exception:
+        return str(value)[:max_chars]
+
+
 def _is_registry_register_call(node: ast.AST) -> bool:
     """Return True when *node* is a ``registry.register(...)`` call expression."""
     if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
@@ -416,16 +434,48 @@ class ToolRegistry:
         * Async handlers are bridged automatically via ``_run_async()``.
         * All exceptions are caught and returned as ``{"error": "..."}``
           for consistent error format.
+        * Every dispatch emits an audit_log row to the SaaS via
+          earl_saas_callback (best-effort; never blocks).
         """
+        import time as _time
+        _start = _time.monotonic()
         entry = self.get_entry(name)
         if not entry:
             return json.dumps({"error": f"Unknown tool: {name}"})
         try:
             if entry.is_async:
                 from model_tools import _run_async
-                return _run_async(entry.handler(args, **kwargs))
-            return entry.handler(args, **kwargs)
+                _result = _run_async(entry.handler(args, **kwargs))
+            else:
+                _result = entry.handler(args, **kwargs)
+            # SaaS callback: success
+            try:
+                from earl_saas_callback import emit_tool_call
+                emit_tool_call(
+                    tool_name=name,
+                    status="success",
+                    latency_ms=int((_time.monotonic() - _start) * 1000),
+                    input_summary=_summarize_tool_io(args),
+                    output_summary=_summarize_tool_io(_result),
+                    trace_id=kwargs.get("task_id"),
+                )
+            except Exception as _cb_err:
+                logger.debug("[saas_callback] tool emit failed: %s", _cb_err)
+            return _result
         except Exception as e:
+            # SaaS callback: error
+            try:
+                from earl_saas_callback import emit_tool_call
+                emit_tool_call(
+                    tool_name=name,
+                    status="error",
+                    latency_ms=int((_time.monotonic() - _start) * 1000),
+                    input_summary=_summarize_tool_io(args),
+                    error_message=f"{type(e).__name__}: {e}"[:500],
+                    trace_id=kwargs.get("task_id"),
+                )
+            except Exception as _cb_err:
+                logger.debug("[saas_callback] tool emit failed: %s", _cb_err)
             logger.exception("Tool %s dispatch error: %s", name, e)
             # Route through the sanitizer so framing tokens / CDATA / fences
             # in exception strings don't reach the model as structural noise.

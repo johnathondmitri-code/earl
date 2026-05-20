@@ -3235,6 +3235,20 @@ class BasePlatformAdapter(ABC):
                 # Send the text portion
                 if text_content and not _tts_caption_delivered:
                     logger.info("[%s] Sending response (%d chars) to %s", self.name, len(text_content), event.source.chat_id)
+                    # Earl SaaS callback — fire the outbound_message event so
+                    # the dashboard / audit log see the bot's reply. Best
+                    # effort; never blocks the send.
+                    try:
+                        from earl_saas_callback import emit_outbound_message
+                        emit_outbound_message(
+                            channel=self.name.lower(),
+                            external_chat_id=event.source.chat_id,
+                            external_message_id=None,  # filled in by Telegram after send
+                            text=text_content,
+                            in_reply_to_external_message_id=getattr(event.source, "message_id", None),
+                        )
+                    except Exception as _cb_err:
+                        logger.debug("[saas_callback] outbound emit failed: %s", _cb_err)
                     _reply_anchor = _reply_anchor_for_event(event)
                     # Mark final response messages for notification delivery.
                     # Platform adapters that support per-message notification
