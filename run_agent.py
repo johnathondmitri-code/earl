@@ -118,6 +118,12 @@ from tools.tool_result_storage import maybe_persist_tool_result, enforce_turn_bu
 from tools.interrupt import set_interrupt as _set_interrupt
 from tools.browser_tool import cleanup_browser
 
+# Earl-specific tools. These register with the tool registry at import time
+# (each module's bottom-of-file `registry.register(...)` block). If a tool
+# isn't imported anywhere at boot, it never registers — and the LLM never
+# sees it. Add new Earl tool modules here.
+import tools.pipedream_tool  # noqa: F401 — import for registration side effect
+
 
 # Agent internals extracted to agent/ package for modularity
 from agent.memory_manager import StreamingContextScrubber, build_memory_context_block, sanitize_context
